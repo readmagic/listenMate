@@ -1,5 +1,5 @@
 /**
- * Session detector — re-exported from @readany/core/reader
+ * Session detector — re-exported from @listenmate/core/reader
  */
-export { createSessionDetector } from "@readany/core/reader";
-export type { SessionEvent, SessionDetector } from "@readany/core/reader";
+export { createSessionDetector } from "@listenmate/core/reader";
+export type { SessionEvent, SessionDetector } from "@listenmate/core/reader";

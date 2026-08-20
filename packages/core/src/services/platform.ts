@@ -35,13 +35,6 @@ export interface FileTransferOptions {
   onProgress?: (loaded: number, total: number) => void;
 }
 
-export interface UpdateInfo {
-  version: string;
-  notes?: string;
-  date?: string;
-  downloadUrl?: string;
-}
-
 export interface IDatabase {
   execute(sql: string, params?: unknown[]): Promise<void>;
   select<T>(sql: string, params?: unknown[]): Promise<T[]>;
@@ -98,10 +91,6 @@ export interface IPlatformService {
   // ---- App info ----
   getAppVersion(): Promise<string>;
 
-  // ---- Update (desktop only, mobile returns noop) ----
-  checkUpdate?(): Promise<UpdateInfo | null>;
-  installUpdate?(): Promise<void>;
-
   // ---- KV Storage (cross-platform key-value persistence) ----
   // Web: localStorage, RN: AsyncStorage / expo-secure-store
   kvGetItem(key: string): Promise<string | null>;
@@ -117,23 +106,6 @@ export interface IPlatformService {
   // Desktop: system save dialog, RN: expo-file-system + expo-sharing
   // Returns saved path if successful, null if cancelled.
   shareOrDownloadFile(content: string, filename: string, mimeType: string): Promise<string | null>;
-
-  // ---- LAN Sync ----
-  // Check if device is on WiFi (returns true on desktop)
-  isOnWifi?(): Promise<boolean>;
-  // Get local IP address for LAN sync
-  getLocalIP?(): Promise<string>;
-  // Start a local HTTP server for LAN sync
-  startLANServer?(
-    port: number,
-    handler: (
-      method: string,
-      path: string,
-      headers: Record<string, string>,
-    ) => Promise<{ status: number; body?: Uint8Array; headers?: Record<string, string> }>,
-  ): Promise<{ port: number; server: unknown }>;
-  // Stop the local HTTP server
-  stopLANServer?(server: unknown): Promise<void>;
 }
 
 /**

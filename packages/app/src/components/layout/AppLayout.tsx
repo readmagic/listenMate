@@ -15,9 +15,7 @@
  * Home-type pages (home/chat/notes/skills/stats) share the left sidebar.
  * Reader pages are full-width (no sidebar).
  */
-import { ChatPage as ChatPageComponent } from "@/components/chat/ChatPage";
 import { CommandPalette } from "@/components/command-palette/CommandPalette";
-import { EpubDraftWorkspace } from "@/components/epub-draft/EpubDraftWorkspace";
 import { HomePage } from "@/components/home/HomePage";
 import { NotesPage } from "@/components/notes/NotesPage";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
@@ -27,12 +25,11 @@ import { MissingBookPromptDialog } from "@/components/shared/MissingBookPromptDi
 import { ReadingStatsPanel } from "@/components/stats/ReadingStatsPanel";
 import { FloatingTTSBubble } from "@/components/tts/FloatingTTSBubble";
 import { toggleWindowFullscreen } from "@/lib/window-fullscreen";
-import SkillsPage from "@/pages/Skills";
 import { useAppStore } from "@/stores/app-store";
 import { useLibraryStore } from "@/stores/library-store";
 import { useReaderStore } from "@/stores/reader-store";
-import { useFontStore } from "@readany/core/stores";
-import { useSettingsStore } from "@readany/core/stores/settings-store";
+import { useFontStore } from "@listenmate/core/stores";
+import { useSettingsStore } from "@listenmate/core/stores/settings-store";
 import { BookOpen } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -42,9 +39,7 @@ import { TabBar } from "./TabBar";
 /** All home sub-views — each stays mounted and uses display:none to toggle. */
 const HOME_VIEWS: { id: string; Component: React.ComponentType }[] = [
   { id: "home", Component: HomePage },
-  { id: "chat", Component: ChatPageComponent },
   { id: "notes", Component: NotesPage },
-  { id: "skills", Component: SkillsPage },
   { id: "stats", Component: ReadingStatsPanel },
 ];
 
@@ -62,14 +57,14 @@ export function AppLayout() {
   const initTab = useReaderStore((s) => s.initTab);
   const readerStoreTabs = useReaderStore((s) => s.tabs);
   const books = useLibraryStore((s) => s.books);
-  const { hasCompletedOnboarding: _hasCompletedOnboarding, _hasHydrated } = useSettingsStore();
+  const { _hasHydrated } = useSettingsStore();
   const { t } = useTranslation();
 
   // Inject @font-face / <link> for all custom fonts into the main app document
   const customFonts = useFontStore((s) => s.fonts);
   useEffect(() => {
     // 1. Inject <link> tags for CSS-based remote fonts
-    const cssLinkClass = "__readany_remote_css_font__";
+    const cssLinkClass = "__listenmate_remote_css_font__";
     // Remove old ones that are no longer needed
     for (const el of document.querySelectorAll(`link.${cssLinkClass}`)) {
       el.remove();
@@ -88,7 +83,7 @@ export function AppLayout() {
     if (customFonts.every((f) => f.remoteCssUrl)) return;
     import("@tauri-apps/api/core")
       .then(({ convertFileSrc }) => {
-        const styleId = "__readany_app_font_faces__";
+        const styleId = "__listenmate_app_font_faces__";
         let el = document.getElementById(styleId) as HTMLStyleElement | null;
         if (!el) {
           el = document.createElement("style");
@@ -128,9 +123,7 @@ export function AppLayout() {
 
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const readerTabs = tabs.filter((t) => t.type === "reader" && t.bookId);
-  const draftTabs = tabs.filter((t) => t.type === "epubDraft" && t.draftId);
   const isReaderActive = readerTabs.some((t) => t.id === activeTabId);
-  const isWorkspaceActive = draftTabs.some((t) => t.id === activeTabId);
   const [showTabBar, setShowTabBar] = useState(!isReaderActive);
   const hideTabBarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevIsReaderActiveRef = useRef(isReaderActive);
@@ -237,7 +230,7 @@ export function AppLayout() {
   }, [isReaderActive]);
 
   // Determine which home sub-view is active
-  const homeViewKey = isReaderActive || isWorkspaceActive ? null : (activeTabId ?? "home");
+  const homeViewKey = isReaderActive ? null : (activeTabId ?? "home");
 
   // Track which reader tabs we've already initialized
   const initializedRef = useRef<Set<string>>(new Set());
@@ -348,11 +341,11 @@ export function AppLayout() {
         <TabBar />
       </div>
       <main className="relative flex min-h-0 flex-1 flex-col overflow-hidden">
-        {!isReaderActive && !isWorkspaceActive && <div className="h-8 shrink-0" />}
+        {!isReaderActive && <div className="h-8 shrink-0" />}
         {/* === Home layer (sidebar + content card) === */}
         <div
           className="flex min-h-0 flex-1 w-full overflow-hidden"
-          style={{ display: !isReaderActive && !isWorkspaceActive ? "flex" : "none" }}
+          style={{ display: !isReaderActive ? "flex" : "none" }}
         >
           <HomeSidebar />
           <div className="min-h-0 flex-1 overflow-hidden pr-1 pb-1">
@@ -397,16 +390,6 @@ export function AppLayout() {
             </div>
           );
         })}
-
-        {draftTabs.map((tab) => (
-          <div
-            key={tab.id}
-            className="absolute inset-0 overflow-hidden pt-8"
-            style={{ display: activeTabId === tab.id ? "block" : "none" }}
-          >
-            <EpubDraftWorkspace draftId={tab.draftId!} />
-          </div>
-        ))}
       </main>
       <MissingBookPromptDialog />
       <SettingsDialog open={showSettings} onClose={() => setShowSettings(false)} />

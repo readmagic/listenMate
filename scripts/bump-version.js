@@ -11,8 +11,6 @@
  *   - packages/app/package.json
  *   - packages/app/src-tauri/tauri.conf.json
  *   - packages/app/src-tauri/Cargo.toml
- *   - packages/app-expo/package.json
- *   - packages/app-expo/app.config.js (expo.version)
  */
 const fs = require("fs");
 const path = require("path");
@@ -53,34 +51,6 @@ const VERSION_FILES = [
         throw new Error("Could not find package version in Cargo.toml");
       }
       return content.replace(/^version = "[^"]+"$/m, `version = "${version}"`);
-    },
-  },
-  {
-    path: "packages/app-expo/package.json",
-    read: (content) => JSON.parse(content).version,
-    write: (content, version) => {
-      const json = JSON.parse(content);
-      json.version = version;
-      return JSON.stringify(json, null, 2) + "\n";
-    },
-  },
-  {
-    path: "packages/app-expo/app.config.js",
-    read: (content) => {
-      const match = content.match(/^\s*version:\s*"([^"]+)"\s*,\s*$/m);
-      if (!match) {
-        throw new Error("Could not find expo.version in app.config.js");
-      }
-      return match[1];
-    },
-    write: (content, version) => {
-      if (!/^\s*version:\s*"([^"]+)"\s*,\s*$/m.test(content)) {
-        throw new Error("Could not find expo.version in app.config.js");
-      }
-      return content.replace(
-        /^(\s*version:\s*)"[^"]+"(\s*,\s*)$/m,
-        `$1"${version}"$2`
-      );
     },
   },
 ];
@@ -133,7 +103,7 @@ function runPrebuildChecks() {
 
   console.log("1️⃣  Checking TypeScript compilation for packages/app...");
   try {
-    execSync("pnpm exec tsc --noEmit", {
+    execSync("bunx tsc --noEmit", {
       cwd: path.join(ROOT, "packages/app"),
       stdio: "inherit",
     });
@@ -143,21 +113,9 @@ function runPrebuildChecks() {
     process.exit(1);
   }
 
-  console.log("2️⃣  Checking TypeScript compilation for packages/app-expo...");
+  console.log("2️⃣  Checking TypeScript compilation for packages/core...");
   try {
-    execSync("pnpm exec tsc --noEmit", {
-      cwd: path.join(ROOT, "packages/app-expo"),
-      stdio: "inherit",
-    });
-    console.log("   ✅ packages/app-expo: TypeScript OK\n");
-  } catch {
-    console.error("   ❌ packages/app-expo: TypeScript errors found!");
-    process.exit(1);
-  }
-
-  console.log("3️⃣  Checking TypeScript compilation for packages/core...");
-  try {
-    execSync("pnpm exec tsc --noEmit", {
+    execSync("bunx tsc --noEmit", {
       cwd: path.join(ROOT, "packages/core"),
       stdio: "inherit",
     });
@@ -167,15 +125,12 @@ function runPrebuildChecks() {
     process.exit(1);
   }
 
-  console.log("4️⃣  Checking dependencies...");
+  console.log("3️⃣  Checking dependencies...");
   const pkgApp = JSON.parse(
     fs.readFileSync(path.join(ROOT, "packages/app/package.json"), "utf8")
   );
-  const pkgAppExpo = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "packages/app-expo/package.json"), "utf8")
-  );
 
-  const depsToCheck = ["pdfjs-dist", "onnxruntime-node", "onnxruntime-web"];
+  const depsToCheck = ["pdfjs-dist"];
   const missingDeps = [];
 
   for (const dep of depsToCheck) {
@@ -185,18 +140,12 @@ function runPrebuildChecks() {
         missingDeps.push(`packages/app needs '${dep}' but not installed`);
       }
     }
-    if (pkgAppExpo.dependencies?.[dep]) {
-      const nodeModulesPath = path.join(ROOT, "node_modules", dep);
-      if (!fs.existsSync(nodeModulesPath)) {
-        missingDeps.push(`packages/app-expo needs '${dep}' but not installed`);
-      }
-    }
   }
 
   if (missingDeps.length > 0) {
     console.error("   ❌ Missing dependencies:");
     missingDeps.forEach((m) => console.error(`      - ${m}`));
-    console.error("\n   Run 'pnpm install' in the root directory.");
+    console.error("\n   Run 'bun install' in the root directory.");
     process.exit(1);
   }
 

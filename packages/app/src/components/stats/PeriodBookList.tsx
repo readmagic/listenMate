@@ -1,6 +1,6 @@
 import { useResolvedSrc } from "@/hooks/use-resolved-src";
-import type { PeriodBookStats } from "@readany/core/stats";
-import { getBookProgressPercent } from "@readany/core/utils";
+import type { PeriodBookStats } from "@listenmate/core/stats";
+import { getBookProgressPercent } from "@listenmate/core/utils";
 /**
  * PeriodBookList — shows books read in a time period with reading time and progress
  */

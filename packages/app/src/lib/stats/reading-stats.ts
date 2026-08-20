@@ -1,14 +1,14 @@
 /**
- * Proxy re-export — actual implementation lives in @readany/core/stats
+ * Proxy re-export — actual implementation lives in @listenmate/core/stats
  */
 export {
   ReadingStatsService,
   readingStatsService,
-} from "@readany/core/stats/reading-stats";
+} from "@listenmate/core/stats/reading-stats";
 export type {
   DailyStats,
   BookStats,
   OverallStats,
   PeriodBookStats,
   TrendPoint,
-} from "@readany/core/stats/reading-stats";
+} from "@listenmate/core/stats/reading-stats";

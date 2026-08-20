@@ -25,21 +25,21 @@ export function AppearancePage({ onNext, onPrev, step, totalSteps }: any) {
   const [theme, setThemeState] = useState<ThemeMode>("dark");
 
   useEffect(() => {
-    const saved = localStorage.getItem("readany-theme") as ThemeMode | null;
+    const saved = localStorage.getItem("listenmate-theme") as ThemeMode | null;
     if (saved && THEME_CONFIG[saved]) {
       setThemeState(saved);
     }
   }, []);
 
   const handleLanguageChange = async (lang: string) => {
-    const { changeAndPersistLanguage } = await import("@readany/core/i18n");
+    const { changeAndPersistLanguage } = await import("@listenmate/core/i18n");
     await changeAndPersistLanguage(lang);
   };
 
   const handleThemeChange = (newTheme: ThemeMode) => {
     setThemeState(newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
-    localStorage.setItem("readany-theme", newTheme);
+    localStorage.setItem("listenmate-theme", newTheme);
   };
 
   return (
@@ -64,7 +64,7 @@ export function AppearancePage({ onNext, onPrev, step, totalSteps }: any) {
             {t("onboarding.appearance.title", "Appearance & Language")}
           </h2>
           <p className="text-sm text-muted-foreground">
-            {t("onboarding.appearance.desc", "Customize ReadAny to suit your preferences.")}
+            {t("onboarding.appearance.desc", "Customize ListenMate to suit your preferences.")}
           </p>
         </div>
 

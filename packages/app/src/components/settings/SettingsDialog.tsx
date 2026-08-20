@@ -3,75 +3,30 @@
  */
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { type SettingsTab, useAppStore } from "@/stores/app-store";
-import { refreshAndCountUnreadFeedback } from "@readany/core/feedback";
-import { cn } from "@readany/core/utils";
-import { useEffect, useState } from "react";
+import { cn } from "@listenmate/core/utils";
 import { useTranslation } from "react-i18next";
-import { AISettings } from "./AISettings";
-import { AboutSettings } from "./AboutSettings";
-import { FeedbackSettings } from "./FeedbackSettings";
 import { FontSettings } from "./FontSettings";
 import { GeneralSettings } from "./GeneralSettings";
-import { ExternalAISettings } from "./ExternalAISettings";
 import { ReadSettingsPanel } from "./ReadSettings";
-import { SyncSettings } from "./SyncSettings";
 import { TTSSettings } from "./TTSSettings";
-import { TranslationSettings } from "./TranslationSettings";
-import { VectorModelSettings } from "./VectorModelSettings";
 
 interface SettingsDialogProps {
   open: boolean;
   onClose: () => void;
 }
 
-const TAB_IDS: SettingsTab[] = [
-  "general",
-  "reading",
-  "fonts",
-  "ai",
-  "vectorModel",
-  "tts",
-  "translation",
-  "sync",
-  "externalAi",
-  "feedback",
-  "about",
-];
+const TAB_IDS: SettingsTab[] = ["general", "reading", "fonts", "tts"];
 const TAB_KEYS: Record<SettingsTab, string> = {
   general: "settings.general",
   reading: "settings.reading",
   fonts: "settings.fonts",
-  ai: "settings.ai",
-  vectorModel: "settings.vectorModel",
   tts: "settings.tts",
-  translation: "settings.translationTab",
-  sync: "settings.sync",
-  externalAi: "settings.externalAi",
-  feedback: "feedback.title",
-  about: "settings.about",
 };
 
 export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
   const { t } = useTranslation();
   const settingsTab = useAppStore((s) => s.settingsTab);
   const setShowSettings = useAppStore((s) => s.setShowSettings);
-  const [unreadFeedback, setUnreadFeedback] = useState(0);
-
-  // Refresh unread feedback count whenever the dialog opens or the user
-  // switches into the feedback tab (the screen also marks replies as seen,
-  // so we re-fetch when leaving the tab too).
-  useEffect(() => {
-    if (!open) return;
-    let cancelled = false;
-    refreshAndCountUnreadFeedback()
-      .then((count) => {
-        if (!cancelled) setUnreadFeedback(count);
-      })
-      .catch((err) => console.warn("[SettingsDialog] feedback unread refresh:", err));
-    return () => {
-      cancelled = true;
-    };
-  }, [open, settingsTab]);
 
   const setActiveTab = (tab: SettingsTab) => {
     setShowSettings(true, tab);
@@ -102,12 +57,6 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
                   onClick={() => setActiveTab(id)}
                 >
                   <span>{t(TAB_KEYS[id])}</span>
-                  {id === "feedback" && unreadFeedback > 0 ? (
-                    <span
-                      className="h-2 w-2 flex-shrink-0 rounded-full bg-destructive"
-                      aria-label={t("feedback.hasNewReply", "有新回复")}
-                    />
-                  ) : null}
                 </button>
               ))}
             </nav>
@@ -118,14 +67,7 @@ export function SettingsDialog({ open, onClose }: SettingsDialogProps) {
             {settingsTab === "general" && <GeneralSettings />}
             {settingsTab === "reading" && <ReadSettingsPanel />}
             {settingsTab === "fonts" && <FontSettings />}
-            {settingsTab === "ai" && <AISettings />}
-            {settingsTab === "vectorModel" && <VectorModelSettings />}
             {settingsTab === "tts" && <TTSSettings />}
-            {settingsTab === "translation" && <TranslationSettings />}
-            {settingsTab === "sync" && <SyncSettings />}
-            {settingsTab === "externalAi" && <ExternalAISettings />}
-            {settingsTab === "feedback" && <FeedbackSettings />}
-            {settingsTab === "about" && <AboutSettings />}
           </div>
         </div>
       </DialogContent>

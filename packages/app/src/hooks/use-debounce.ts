@@ -1,4 +1,4 @@
 /**
  * useDebounce — thin re-export from core
  */
-export { useDebounce } from "@readany/core/hooks/use-debounce";
+export { useDebounce } from "@listenmate/core/hooks/use-debounce";

@@ -1,20 +1,19 @@
-import { SyncButton } from "@/components/ui/SyncButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MarkdownEditor } from "@/components/ui/markdown-editor";
-import { useResolvedSrc, useSyncVersion } from "@/hooks/use-resolved-src";
+import { useResolvedSrc } from "@/hooks/use-resolved-src";
 import type { HighlightWithBook } from "@/lib/db/database";
 import { getBook as getBookRecord } from "@/lib/db/database";
 import { openDesktopBook } from "@/lib/library/open-book";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useAppStore } from "@/stores/app-store";
 import { useLibraryStore } from "@/stores/library-store";
-import { type ExportFormat, annotationExporter } from "@readany/core/export";
-import { sortAnnotationsByPosition } from "@readany/core/reader";
-import type { Highlight, Note } from "@readany/core/types";
-import { HIGHLIGHT_COLOR_HEX } from "@readany/core/types";
-import { cn } from "@readany/core/utils";
-import { eventBus } from "@readany/core/utils/event-bus";
+import { type ExportFormat, annotationExporter } from "@listenmate/core/export";
+import { sortAnnotationsByPosition } from "@listenmate/core/reader";
+import type { Highlight, Note } from "@listenmate/core/types";
+import { HIGHLIGHT_COLOR_HEX } from "@listenmate/core/types";
+import { cn } from "@listenmate/core/utils";
+import { eventBus } from "@listenmate/core/utils/event-bus";
 import {
   BookOpen,
   Check,
@@ -48,24 +47,18 @@ interface CoverImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
 
 function CoverImage({ url, fallback, ...imgProps }: CoverImageProps) {
   const resolvedSrc = useResolvedSrc(url ?? undefined);
-  const syncVersion = useSyncVersion();
   const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     setHasError(false);
-  }, [resolvedSrc, syncVersion]);
+  }, [resolvedSrc]);
 
   if (!resolvedSrc || hasError) {
     return <>{fallback}</>;
   }
 
   return (
-    <img
-      key={`${resolvedSrc}-${syncVersion}`}
-      src={resolvedSrc}
-      onError={() => setHasError(true)}
-      {...imgProps}
-    />
+    <img key={resolvedSrc} src={resolvedSrc} onError={() => setHasError(true)} {...imgProps} />
   );
 }
 
@@ -326,7 +319,6 @@ export function NotesPage() {
             <div>
               <div className="flex items-center gap-1">
                 <h1 className="text-base font-semibold">{t("notes.title")}</h1>
-                <SyncButton iconSize={14} />
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 {t("notes.stats", {

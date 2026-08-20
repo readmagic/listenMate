@@ -1,4 +1,3 @@
-import { ChatPanel } from "@/components/chat/ChatPanel";
 /**
  * ReaderView — main reader page component.
  *
@@ -30,14 +29,13 @@ import { useNotebookStore } from "@/stores/notebook-store";
 import { useReaderStore } from "@/stores/reader-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useTTSStore } from "@/stores/tts-store";
-import { useChapterTranslation } from "@readany/core/hooks";
-import { getPlatformService } from "@readany/core/services";
-import { getCSSFontFace, useFontStore, useReadingSessionStore } from "@readany/core/stores";
-import { useRubyStore } from "@readany/core/stores/ruby-store";
-import { splitNarrationText } from "@readany/core/tts";
-import type { CitationPart, HighlightColor } from "@readany/core/types";
-import { eventBus } from "@readany/core/utils/event-bus";
-import { throttle } from "@readany/core/utils/throttle";
+import { getPlatformService } from "@listenmate/core/services";
+import { getCSSFontFace, useFontStore, useReadingSessionStore } from "@listenmate/core/stores";
+import { useRubyStore } from "@listenmate/core/stores/ruby-store";
+import { splitNarrationText } from "@listenmate/core/tts";
+import type { HighlightColor } from "@listenmate/core/types";
+import { eventBus } from "@listenmate/core/utils/event-bus";
+import { throttle } from "@listenmate/core/utils/throttle";
 import { X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -53,7 +51,6 @@ import { SearchBar } from "./SearchBar";
 import { SelectionPopover } from "./SelectionPopover";
 import { TOCPanel } from "./TOCPanel";
 import { TTSPage } from "./TTSPage";
-import { TranslationPopover } from "./TranslationPopover";
 
 const REFLOWABLE_CHARACTERS_PER_LOCATION = 1500;
 const MAX_TRACKED_LOCATION_DELTA = 20;
@@ -416,7 +413,7 @@ type TTSSegment = {
 };
 
 export function ReaderView({ bookId, tabId }: ReaderViewProps) {
-  const TOOLBAR_PIN_STORAGE_KEY = "readany-reader-toolbar-pinned";
+  const TOOLBAR_PIN_STORAGE_KEY = "listenmate-reader-toolbar-pinned";
   const readerTab = useReaderStore((s) => s.tabs[tabId]);
   const removeReaderTab = useReaderStore((s) => s.removeTab);
   const appTab = useAppStore((s) => s.tabs.find((t) => t.id === tabId));
@@ -565,7 +562,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
   const foliateRef = useRef<FoliateViewerHandle>(null);
 
   // Current section index for chapter translation
-  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [currentSectionTotal, setCurrentSectionTotal] = useState<number | null>(null);
   const currentSectionIndexRef = useRef(0);
   const currentSectionTotalRef = useRef<number | null>(null);
@@ -573,23 +569,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
 
   // Track when foliate is ready to receive annotations
   const [foliateReady, setFoliateReady] = useState(false);
-  // Separate delayed ready for chapter translation (avoids DOM conflict with CFI navigation)
-  const [translationReady, setTranslationReady] = useState(false);
-
-  // Chapter translation hook
-  const chapterTranslation = useChapterTranslation({
-    bookId,
-    sectionIndex: currentSectionIndex,
-    ready: translationReady,
-    getParagraphs: () => foliateRef.current?.getChapterParagraphs() ?? [],
-    injectTranslations: (results, visibility) =>
-      foliateRef.current?.injectChapterTranslations(results, visibility),
-    removeTranslations: () => foliateRef.current?.removeChapterTranslations(),
-    applyVisibility: (originalVisible, translationVisible) =>
-      foliateRef.current?.applyChapterTranslationVisibility(originalVisible, translationVisible),
-    getCurrentCfi: () => readerTab?.currentCfi,
-    goToCfi: (cfi) => foliateRef.current?.goToCFI(cfi),
-  });
 
   // Track which highlights have been rendered (id -> {cfi, note, color}) to detect changes
   const renderedHighlightsRef = useRef<
@@ -600,7 +579,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
   useEffect(() => {
     renderedHighlightsRef.current.clear();
     setFoliateReady(false);
-    setTranslationReady(false);
   }, [bookId]);
 
   // Ref to track if we've already handled the initialCfi for this mount
@@ -790,14 +768,10 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
   const [tocItems, setTocItems] = useState<TOCItem[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [showToc, setShowToc] = useState(false);
-  const [showTranslation, setShowTranslation] = useState(false);
-  const [translationText, setTranslationText] = useState("");
-  const [translationPos, setTranslationPos] = useState({ x: 0, y: 0 });
   const [searchResults, setSearchResults] = useState<number>(0);
   const [searchIndex, setSearchIndex] = useState<number>(0);
   const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
-  const [showChat, setShowChat] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showTTS, setShowTTS] = useState(false);
   const [isReimporting, setIsReimporting] = useState(false);
@@ -813,12 +787,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
   });
 
   // Resizable panel widths
-  const chatPanel = useResizablePanel({
-    storageKey: "reader-chat-panel-width",
-    defaultWidth: 320,
-    minWidth: 200,
-    maxWidth: 600,
-  });
   const tocPanel = useResizablePanel({
     storageKey: "reader-toc-panel-width",
     defaultWidth: 300,
@@ -940,7 +908,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
     currentSectionIndexRef.current = 0;
     currentSectionTotalRef.current = null;
     currentChapterTitleRef.current = "";
-    setCurrentSectionIndex(0);
     setCurrentSectionTotal(null);
     resetReaderTTSState({ stopPlayback: false, clearSessionBinding: false });
     if (switchedBook) {
@@ -1351,9 +1318,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
       // Throttled save to DB
       throttledSaveProgress(bookId, progress, cfi);
 
-      // Mark translation ready after first successful relocate (CFI navigation done)
-      if (!translationReady) setTranslationReady(true);
-
       // If TTS is waiting for a page turn to complete, fire the continuation callback now
       // that the renderer has fully updated its position (renderer.start reflects new page).
       if (pendingTTSContinueCallbackRef.current) {
@@ -1366,15 +1330,7 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
         void cb();
       }
     },
-    [
-      tabId,
-      bookId,
-      isFixedLayout,
-      setProgress,
-      setChapter,
-      throttledSaveProgress,
-      translationReady,
-    ],
+    [tabId, bookId, isFixedLayout, setProgress, setChapter, throttledSaveProgress],
   );
 
   const handleTocReady = useCallback((toc: TOCItem[]) => {
@@ -1403,11 +1359,7 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
   // We need to re-add all highlights for the current book.
   const handleSectionLoad = useCallback(
     (sectionIndex: number) => {
-      // Reset chapter translation on section change
       currentSectionIndexRef.current = sectionIndex;
-      setCurrentSectionIndex(sectionIndex);
-      setTranslationReady(false);
-      chapterTranslation.reset();
 
       // Delay slightly to ensure foliate view is ready
       setTimeout(() => {
@@ -1441,42 +1393,13 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
         );
       }, 100);
     },
-    [highlights, bookId, chapterTranslation.reset],
+    [highlights, bookId],
   );
 
   const handleError = useCallback((err: Error) => {
     setError(err.message);
     setIsLoading(false);
   }, []);
-
-  // Sync chapter translation visibility with DOM
-  useEffect(() => {
-    if (chapterTranslation.state.status !== "complete") return;
-    try {
-      const renderer = foliateRef.current?.getView()?.renderer;
-      const contents = renderer?.getContents?.();
-      if (!contents?.[0]?.doc) return;
-      const doc = contents[0].doc as Document;
-      const { originalVisible, translationVisible } = chapterTranslation.state;
-      // Translation elements
-      const translationEls = doc.querySelectorAll(".readany-translation");
-      translationEls.forEach((el) => {
-        (el as HTMLElement).setAttribute("data-hidden", String(!translationVisible));
-        // When original is hidden, show translation in original style
-        (el as HTMLElement).setAttribute(
-          "data-solo",
-          String(!originalVisible && translationVisible),
-        );
-      });
-      // Original text elements
-      const originalEls = doc.querySelectorAll("[data-translate-id]");
-      originalEls.forEach((el) => {
-        (el as HTMLElement).setAttribute("data-original-hidden", String(!originalVisible));
-      });
-    } catch {
-      // Ignore
-    }
-  }, [chapterTranslation.state]);
 
   const handleSelection = useCallback(
     (sel: BookSelection | null) => {
@@ -1798,49 +1721,9 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
     [highlights, bookId, toolbarVisible],
   );
 
-  const handleTranslate = useCallback(() => {
-    if (selection?.text) {
-      setTranslationText(selection.text);
-      setTranslationPos(selectionPos);
-      setShowTranslation(true);
-    }
-    setSelection(null);
-  }, [selection, selectionPos]);
-
-  const handleAskAI = useCallback(() => {
-    if (selection?.text) {
-      // Store in sessionStorage in case ChatPanel is not mounted yet
-      // ChatPanel will check and consume this on mount
-      sessionStorage.setItem(
-        `pending-ai-quote-${bookId}`,
-        JSON.stringify({
-          selectedText: selection.text,
-          bookId,
-          chapterTitle: readerTab?.chapterTitle,
-        }),
-      );
-
-      // Open chat panel
-      setShowChat(true);
-
-      // Also dispatch event for immediate handling if panel is already open
-      window.dispatchEvent(
-        new CustomEvent("ask-ai-from-reader", {
-          detail: {
-            selectedText: selection.text,
-            bookId,
-            chapterTitle: readerTab?.chapterTitle,
-          },
-        }),
-      );
-    }
-    setSelection(null);
-  }, [selection, bookId, readerTab?.chapterTitle]);
-
   const handleCloseSelection = useCallback(() => setSelection(null), []);
   const handleToggleSearch = useCallback(() => setShowSearch((p) => !p), []);
   const handleToggleToc = useCallback(() => setShowToc((p) => !p), []);
-  const handleToggleChat = useCallback(() => setShowChat((p) => !p), []);
   const handleToggleSettings = useCallback(() => setShowSettings((p) => !p), []);
 
   useEffect(() => {
@@ -2766,71 +2649,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
     [navigateToCfi],
   );
 
-  const handleNavigateToCitation = useCallback(
-    (citation: CitationPart) => {
-      if (!citation.cfi || citation.cfi.trim() === "") {
-        console.warn("Citation has no valid CFI, falling back to chapter index:", {
-          chapterTitle: citation.chapterTitle,
-          chapterIndex: citation.chapterIndex,
-          text: citation.text.slice(0, 50),
-        });
-        try {
-          foliateRef.current?.goToIndex(citation.chapterIndex);
-        } catch (error) {
-          console.error("Failed to navigate to chapter:", error, citation);
-        }
-        return;
-      }
-
-      if (citation.cfi.startsWith("page:")) {
-        navigateToReaderLocation(citation.cfi);
-        return;
-      }
-
-      console.log("[handleNavigateToCitation] Citation clicked:", citation);
-
-      try {
-        navigateToCfi(citation.cfi);
-
-        const flashHighlight = () => {
-          let flashCount = 0;
-          const maxFlashes = 3;
-          const flashInterval = 500;
-
-          const doFlash = () => {
-            if (flashCount >= maxFlashes) return;
-
-            foliateRef.current?.addAnnotation({
-              value: citation.cfi,
-              type: "highlight",
-              color: "orange",
-            });
-
-            setTimeout(() => {
-              foliateRef.current?.deleteAnnotation({ value: citation.cfi });
-              flashCount++;
-
-              if (flashCount < maxFlashes) {
-                setTimeout(doFlash, flashInterval);
-              }
-            }, flashInterval);
-          };
-
-          setTimeout(doFlash, 100);
-        };
-
-        flashHighlight();
-      } catch (error) {
-        console.error(
-          "[handleNavigateToCitation] Failed to navigate to citation:",
-          error,
-          citation,
-        );
-      }
-    },
-    [navigateToCfi, navigateToReaderLocation],
-  );
-
   if (!readerTab) {
     return <div className="flex h-full items-center justify-center">{t("common.loading")}</div>;
   }
@@ -2953,7 +2771,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
                 onShowAnnotation={handleShowAnnotation}
                 onToggleSearch={handleToggleSearch}
                 onToggleToc={handleToggleToc}
-                onToggleChat={handleToggleChat}
               />
             ) : isLoading ? (
               <div className="absolute inset-0 flex items-center justify-center bg-background">
@@ -3035,22 +2852,8 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
                 onRemoveHighlight={handleRemoveHighlight}
                 onNote={handleNote}
                 onCopy={handleCopy}
-                onTranslate={handleTranslate}
-                onAskAI={handleAskAI}
                 onSpeak={handleSpeakSelection}
                 onClose={handleCloseSelection}
-              />
-            )}
-
-            {/* Translation popover */}
-            {showTranslation && translationText && (
-              <TranslationPopover
-                text={translationText}
-                position={translationPos}
-                onClose={() => {
-                  setShowTranslation(false);
-                  setTranslationText("");
-                }}
               />
             )}
           </div>
@@ -3066,15 +2869,7 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
             onToggleSearch={handleToggleSearch}
             onToggleToc={handleToggleToc}
             onToggleSettings={handleToggleSettings}
-            onToggleChat={handleToggleChat}
             onToggleTTS={handleToggleTTS}
-            chapterTranslationState={chapterTranslation.state}
-            onChapterTranslationStart={chapterTranslation.startTranslation}
-            onChapterTranslationCancel={chapterTranslation.cancelTranslation}
-            onToggleOriginalVisible={chapterTranslation.toggleOriginalVisible}
-            onToggleTranslationVisible={chapterTranslation.toggleTranslationVisible}
-            onChapterTranslationReset={chapterTranslation.reset}
-            isChatOpen={showChat}
             isTTSActive={showTTS || ttsPlayState !== "stopped"}
             isFixedLayout={isFixedLayout}
             fixedLayoutZoom={fixedLayoutZoom}
@@ -3179,34 +2974,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
           </>
         )}
       </div>
-
-      {/* AI Chat sidebar — RIGHT side, resizable */}
-      {showChat && (
-        <div
-          className="relative ml-1 flex shrink-0 flex-col overflow-hidden rounded-lg border border-border/60 bg-background shadow-sm"
-          style={{ width: chatPanel.width }}
-        >
-          <ResizeHandle
-            side="left"
-            onResizeStart={chatPanel.handleResizeStart}
-            onResize={(delta) => chatPanel.handleResize(delta, "left")}
-            onResizeEnd={chatPanel.handleResizeEnd}
-          />
-          <div className="flex h-10 shrink-0 items-center justify-between border-b border-border/40 px-3">
-            <span className="text-xs font-medium text-foreground">{t("chat.aiAssistant")}</span>
-            <button
-              type="button"
-              className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-              onClick={() => setShowChat(false)}
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <ChatPanel book={book} onNavigateToCitation={handleNavigateToCitation} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

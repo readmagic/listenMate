@@ -1,11 +1,15 @@
 import path from "node:path";
+import { createRequire } from "node:module";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
-const pdfjsDist = path.resolve(__dirname, "../../node_modules/pdfjs-dist");
+// Resolve pdfjs-dist via Node resolution so it works under both pnpm (hoisted)
+// and bun (non-hoisted, symlinked under packages/app/node_modules).
+const require = createRequire(import.meta.url);
+const pdfjsDist = path.dirname(require.resolve("pdfjs-dist/package.json"));
 
 // https://vite.dev/config/
 export default defineConfig(async () => ({

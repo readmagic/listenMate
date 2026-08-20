@@ -129,7 +129,7 @@ describe("exportEpubDraft", () => {
   });
 
   it("exports a valid active draft to a new EPUB file", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-export-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-export-"));
     const dataDir = await createPlatform(root);
     const sourceBytes = buildValidEpub();
     await writeFile(join(dataDir, "books", "valid.epub"), sourceBytes);
@@ -166,7 +166,7 @@ describe("exportEpubDraft", () => {
   });
 
   it("does not overwrite export output unless explicitly allowed", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-export-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-export-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "valid.epub"), buildValidEpub());
     const book = {
@@ -188,7 +188,7 @@ describe("exportEpubDraft", () => {
   });
 
   it("refuses to export an invalid draft", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-export-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-export-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "invalid.epub"), buildInvalidEpub());
     const book = {

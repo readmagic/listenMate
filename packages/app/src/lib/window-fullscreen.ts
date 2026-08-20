@@ -3,7 +3,7 @@ import { StateFlags, restoreStateCurrent, saveWindowState } from "@tauri-apps/pl
 
 const WINDOW_STATE_SETTLE_MS = 40;
 const FULLSCREEN_TRANSITION_MASK_HOLD_MS = 140;
-const FULLSCREEN_RESTORE_STATE_KEY = "readany:restore-window-state-after-fullscreen";
+const FULLSCREEN_RESTORE_STATE_KEY = "listenmate:restore-window-state-after-fullscreen";
 
 const FULLSCREEN_SNAPSHOT_FLAGS = StateFlags.MAXIMIZED | StateFlags.POSITION | StateFlags.SIZE;
 
@@ -16,7 +16,7 @@ const createFullscreenTransitionMask = () => {
   if (typeof document === "undefined") return null;
 
   const mask = document.createElement("div");
-  mask.setAttribute("data-readany-fullscreen-mask", "true");
+  mask.setAttribute("data-listenmate-fullscreen-mask", "true");
   Object.assign(mask.style, {
     position: "fixed",
     inset: "0",

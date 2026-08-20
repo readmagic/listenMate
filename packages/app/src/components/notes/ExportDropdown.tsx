@@ -5,7 +5,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { ExportFormat } from "@readany/core/export";
+import type { ExportFormat } from "@listenmate/core/export";
 import { ClipboardCopy, Download, FileJson, FileText } from "lucide-react";
 import { useTranslation } from "react-i18next";
 

@@ -24,20 +24,11 @@ const coreMocks = vi.hoisted(() => ({
   }),
 }));
 
-const dependencyMocks = vi.hoisted(() => ({
-  deleteThreadsByBookId: vi.fn(),
-  deleteChunks: vi.fn(),
-}));
-
 const eventBusMocks = vi.hoisted(() => ({
   emit: vi.fn(),
 }));
 
 vi.mock("../db-core", () => coreMocks);
-vi.mock("../thread-queries", () => ({
-  deleteThreadsByBookId: dependencyMocks.deleteThreadsByBookId,
-}));
-vi.mock("../chunk-queries", () => ({ deleteChunks: dependencyMocks.deleteChunks }));
 vi.mock("../../utils/event-bus", () => ({ eventBus: eventBusMocks }));
 
 const { getBooks, getBook, getDeletedBookByFileHash, insertBook, updateBook, deleteBook } =
@@ -71,8 +62,6 @@ describe("book-queries", () => {
     coreMocks.nextSyncVersion.mockResolvedValue(1);
     coreMocks.nextUpdatedAt.mockResolvedValue(3000);
     coreMocks.insertTombstone.mockResolvedValue(undefined);
-    dependencyMocks.deleteThreadsByBookId.mockResolvedValue(undefined);
-    dependencyMocks.deleteChunks.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -289,8 +278,6 @@ describe("book-queries", () => {
         ["book-1"],
       );
       expect(mockExecute).not.toHaveBeenCalledWith("DELETE FROM books WHERE id = ?", ["book-1"]);
-      expect(dependencyMocks.deleteThreadsByBookId).toHaveBeenCalledWith("book-1");
-      expect(dependencyMocks.deleteChunks).toHaveBeenCalledWith("book-1");
       expect(mockExecute).toHaveBeenCalledWith(expect.stringContaining("UPDATE books"), [
         expect.any(Number),
         3000,

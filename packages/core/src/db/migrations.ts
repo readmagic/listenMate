@@ -127,7 +127,7 @@ const migrations: Migration[] = [
 export async function runMigrations(): Promise<void> {
   const platform = getPlatformService();
   const db: IDatabase = await platform.loadDatabase(
-    `sqlite:${await getDatabaseFilePath("readany.db")}`,
+    `sqlite:${await getDatabaseFilePath("listenmate.db")}`,
   );
 
   // Create migrations table if not exists
@@ -166,7 +166,7 @@ export async function getSchemaVersion(): Promise<number> {
   try {
     const platform = getPlatformService();
     const db: IDatabase = await platform.loadDatabase(
-      `sqlite:${await getDatabaseFilePath("readany.db")}`,
+      `sqlite:${await getDatabaseFilePath("listenmate.db")}`,
     );
     const rows = await db.select<{ max_version: number | null }>(
       "SELECT MAX(version) as max_version FROM schema_migrations",

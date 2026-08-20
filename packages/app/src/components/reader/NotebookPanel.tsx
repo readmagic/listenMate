@@ -4,11 +4,11 @@ import { MarkdownEditor } from "@/components/ui/markdown-editor";
 import { useAnnotationStore } from "@/stores/annotation-store";
 import { useLibraryStore } from "@/stores/library-store";
 import { useNotebookStore } from "@/stores/notebook-store";
-import { type ExportFormat, annotationExporter } from "@readany/core/export";
-import { createSelectionNoteMutation } from "@readany/core/reader";
-import type { Highlight, Note } from "@readany/core/types";
-import { HIGHLIGHT_COLOR_HEX } from "@readany/core/types";
-import { cn } from "@readany/core/utils";
+import { type ExportFormat, annotationExporter } from "@listenmate/core/export";
+import { createSelectionNoteMutation } from "@listenmate/core/reader";
+import type { Highlight, Note } from "@listenmate/core/types";
+import { HIGHLIGHT_COLOR_HEX } from "@listenmate/core/types";
+import { cn } from "@listenmate/core/utils";
 import {
   ChevronDown,
   ChevronRight,
@@ -111,11 +111,7 @@ export function NotebookPanel({
       });
       if (mutation.kind === "update") {
         updateHighlight(mutation.id, mutation.updates);
-        onAddAnnotation?.(
-          editingHighlight.cfi,
-          editingHighlight.color,
-          mutation.updates.note,
-        );
+        onAddAnnotation?.(editingHighlight.cfi, editingHighlight.color, mutation.updates.note);
       }
       clearPending();
     }

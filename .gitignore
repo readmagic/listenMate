@@ -1,6 +1,5 @@
 # Dependencies
 node_modules/
-.pnpm-store/
 
 # Build
 dist/
@@ -35,7 +34,6 @@ tauri-signing-key.key.pub
 # Logs
 *.log
 npm-debug.log*
-pnpm-debug.log*
 
 # Python
 __pycache__/

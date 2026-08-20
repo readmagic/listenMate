@@ -139,7 +139,7 @@ export async function initI18nLanguage(): Promise<void> {
     const platform = getPlatformService();
 
     // 1. Check if user has already chosen a language
-    const savedLang = await platform.kvGetItem("readany-lang");
+    const savedLang = await platform.kvGetItem("listenmate-lang");
 
     if (savedLang && savedLang !== i18n.language) {
       try {
@@ -165,7 +165,7 @@ export async function initI18nLanguage(): Promise<void> {
             : "en";
           if (lang !== i18n.language) {
             await i18n.changeLanguage(lang);
-            await platform.kvSetItem("readany-lang", lang);
+            await platform.kvSetItem("listenmate-lang", lang);
           }
         }
       } catch {
@@ -190,7 +190,7 @@ export async function changeAndPersistLanguage(lang: string): Promise<void> {
   try {
     const { getPlatformService } = await import("../services/platform");
     const platform = getPlatformService();
-    await platform.kvSetItem("readany-lang", lang);
+    await platform.kvSetItem("listenmate-lang", lang);
   } catch {
     // Failed to persist — non-critical
   }

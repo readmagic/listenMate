@@ -1,12 +1,8 @@
 import { type SettingsTab, useAppStore } from "@/stores/app-store";
-import { cn } from "@readany/core/utils";
+import { cn } from "@listenmate/core/utils";
 import {
   BookOpen,
-  Brain,
-  Bot,
-  Info,
   Keyboard,
-  Languages,
   type LucideIcon,
   Moon,
   Search,
@@ -102,7 +98,7 @@ function searchCommands(query: string, items: CommandItem[]): SearchResult[] {
 
 // ── Recent commands ──
 
-const RECENT_KEY = "readany-recent-commands";
+const RECENT_KEY = "listenmate-recent-commands";
 const MAX_RECENT = 5;
 
 function trackRecent(commandId: string) {
@@ -181,52 +177,12 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         action: () => openSettingsTab("reading"),
       },
       {
-        id: "settings.ai",
-        label: t("settings.ai_title"),
-        keywords: ["ai", "model", "endpoint", "openai", "claude"],
-        category: "settings",
-        icon: Brain,
-        action: () => openSettingsTab("ai"),
-      },
-      {
-        id: "settings.vectorModel",
-        label: t("settings.vm_title"),
-        keywords: ["vector", "embedding", "semantic", "search"],
-        category: "settings",
-        icon: Search,
-        action: () => openSettingsTab("vectorModel"),
-      },
-      {
         id: "settings.tts",
         label: t("tts.settingsTitle"),
         keywords: ["tts", "speech", "voice", "read aloud", "edge"],
         category: "settings",
         icon: Volume2,
         action: () => openSettingsTab("tts"),
-      },
-      {
-        id: "settings.translation",
-        label: t("settings.translation_title"),
-        keywords: ["translation", "translate", "language"],
-        category: "settings",
-        icon: Languages,
-        action: () => openSettingsTab("translation"),
-      },
-      {
-        id: "settings.externalAi",
-        label: t("settings.externalAi"),
-        keywords: ["external", "ai", "agent", "mcp", "cli", "skill"],
-        category: "settings",
-        icon: Bot,
-        action: () => openSettingsTab("externalAi"),
-      },
-      {
-        id: "settings.about",
-        label: t("settings.about"),
-        keywords: ["about", "version", "info"],
-        category: "settings",
-        icon: Info,
-        action: () => openSettingsTab("about"),
       },
       // ── Action commands ──
       {
@@ -246,7 +202,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         icon: Sun,
         action: () => {
           document.documentElement.setAttribute("data-theme", "light");
-          localStorage.setItem("readany-theme", "light");
+          localStorage.setItem("listenmate-theme", "light");
           onClose();
         },
       },
@@ -258,7 +214,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         icon: Moon,
         action: () => {
           document.documentElement.setAttribute("data-theme", "dark");
-          localStorage.setItem("readany-theme", "dark");
+          localStorage.setItem("listenmate-theme", "dark");
           onClose();
         },
       },
@@ -270,7 +226,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
         icon: Sun,
         action: () => {
           document.documentElement.setAttribute("data-theme", "sepia");
-          localStorage.setItem("readany-theme", "sepia");
+          localStorage.setItem("listenmate-theme", "sepia");
           onClose();
         },
       },

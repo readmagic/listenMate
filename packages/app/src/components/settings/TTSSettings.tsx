@@ -9,12 +9,6 @@ import {
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import {
-  DASHSCOPE_VOICES,
-  EDGE_TTS_VOICES,
-  XIAOMI_TTS_VOICES,
-  getSystemVoices,
-} from "@/lib/tts/tts-service";
-import {
   DEFAULT_SYSTEM_VOICE_VALUE,
   findSystemVoiceLabel,
   getSystemVoiceOptions,
@@ -22,18 +16,24 @@ import {
   resolveSystemVoiceValue,
 } from "@/lib/tts/system-voices";
 import { previewTTSConfig, stopTTSPreview } from "@/lib/tts/tts-preview";
+import {
+  DASHSCOPE_VOICES,
+  EDGE_TTS_VOICES,
+  XIAOMI_TTS_VOICES,
+  getSystemVoices,
+} from "@/lib/tts/tts-service";
 import { useTTSStore } from "@/stores/tts-store";
 import {
   DEFAULT_XIAOMI_STYLE_PROMPT,
+  type TTSProfile,
+  type TTSProviderType,
   getActiveTTSProfile,
   getLocaleDisplayLabel,
   getTTSProviderDefinition,
   groupEdgeTTSVoices,
-  type TTSProviderType,
-  type TTSProfile,
-} from "@readany/core/tts";
-import { Cloud, Headphones, Mic, Play, Settings2, Square, Zap } from "lucide-react";
+} from "@listenmate/core/tts";
 import type { TFunction } from "i18next";
+import { Cloud, Headphones, Mic, Play, Settings2, Square, Zap } from "lucide-react";
 /**
  * TTSSettings — TTS configuration panel in the settings dialog.
  *
@@ -156,15 +156,16 @@ export function TTSSettings() {
       ? defaultStylePrompt
       : config.openaiTtsStylePrompt;
   const activeProvider = getTTSProviderDefinition(activeProfile.provider);
-  const providerIcon = activeProfile.provider === "system"
-    ? Headphones
-    : activeProfile.provider === "edge"
-      ? Zap
-      : activeProfile.provider === "dashscope"
-        ? Mic
-        : activeProfile.provider === "xiaomi"
-          ? Cloud
-          : Settings2;
+  const providerIcon =
+    activeProfile.provider === "system"
+      ? Headphones
+      : activeProfile.provider === "edge"
+        ? Zap
+        : activeProfile.provider === "dashscope"
+          ? Mic
+          : activeProfile.provider === "xiaomi"
+            ? Cloud
+            : Settings2;
   const ProviderIcon = providerIcon;
 
   const selectProfile = (profileId: string) => {
@@ -201,9 +202,7 @@ export function TTSSettings() {
             ) : (
               <Play className="mr-1.5 h-3.5 w-3.5" />
             )}
-            {isPreviewing
-              ? t("common.previewing", "试听中")
-              : t("common.preview", "试听")}
+            {isPreviewing ? t("common.previewing", "试听中") : t("common.preview", "试听")}
           </Button>
         </div>
 
@@ -561,7 +560,9 @@ export function TTSSettings() {
               </div>
               {config.openaiTtsEndpoint === "chat-completions" && (
                 <div className="space-y-2">
-                  <span className="text-sm text-foreground">{t("tts.stylePrompt", "朗读风格")}</span>
+                  <span className="text-sm text-foreground">
+                    {t("tts.stylePrompt", "朗读风格")}
+                  </span>
                   <textarea
                     className="min-h-[74px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm"
                     value={openAIStylePromptValue}

@@ -2,7 +2,7 @@
  * TauriPlatformService — IPlatformService implementation for Tauri v2 desktop.
  *
  * Wraps @tauri-apps/plugin-fs, @tauri-apps/plugin-sql, @tauri-apps/plugin-dialog,
- * @tauri-apps/api, and @tauri-apps/plugin-updater behind the core platform interface.
+ * and @tauri-apps/api behind the core platform interface.
  *
  * All Tauri imports are dynamic so the module graph stays clean in SSR/test contexts.
  */
@@ -12,22 +12,8 @@ import type {
   IDatabase,
   IPlatformService,
   IWebSocket,
-  UpdateInfo,
   WebSocketOptions,
-} from "@readany/core/services";
-
-const TAURI_LAN_RUNTIME_ERROR =
-  "Tauri desktop runtime is required to use the LAN sender. Open the desktop app instead of the browser dev server.";
-
-function isTauriRuntimeAvailable(): boolean {
-  return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
-}
-
-function ensureTauriRuntimeForLAN(): void {
-  if (!isTauriRuntimeAvailable()) {
-    throw new Error(TAURI_LAN_RUNTIME_ERROR);
-  }
-}
+} from "@listenmate/core/services";
 
 /** Adapter: wraps Tauri SQL plugin instance as IDatabase */
 function isClosedPoolError(error: unknown): boolean {
@@ -195,10 +181,10 @@ export class TauriPlatformService implements IPlatformService {
       ...fetchOptions
     } = options ?? {};
     const tauriOptions = allowInsecure
-      ? {
+      ? ({
           ...fetchOptions,
           danger: { acceptInvalidCerts: true, acceptInvalidHostnames: true },
-        } as any
+        } as any)
       : fetchOptions;
     try {
       return await tauriFetch(url, tauriOptions);
@@ -272,29 +258,6 @@ export class TauriPlatformService implements IPlatformService {
     return getVersion();
   }
 
-  // ---- Update ----
-
-  async checkUpdate(): Promise<UpdateInfo | null> {
-    const { check } = await import("@tauri-apps/plugin-updater");
-    const update = await check();
-    if (!update) return null;
-    return {
-      version: update.version,
-      notes: update.body || undefined,
-      date: update.date || undefined,
-    };
-  }
-
-  async installUpdate(): Promise<void> {
-    const { check } = await import("@tauri-apps/plugin-updater");
-    const update = await check();
-    if (update) {
-      await update.downloadAndInstall();
-      const { relaunch } = await import("@tauri-apps/plugin-process");
-      await relaunch();
-    }
-  }
-
   // ---- KV Storage (backed by localStorage on desktop/web) ----
 
   async kvGetItem(key: string): Promise<string | null> {
@@ -342,170 +305,5 @@ export class TauriPlatformService implements IPlatformService {
     const { writeTextFile } = await import("@tauri-apps/plugin-fs");
     await writeTextFile(filePath, content);
     return filePath;
-  }
-
-  // ---- LAN Sync ----
-
-  async isOnWifi(): Promise<boolean> {
-    // Desktop is always considered "on WiFi"
-    return true;
-  }
-
-  async getLocalIP(): Promise<string> {
-    ensureTauriRuntimeForLAN();
-
-    // Try Rust-side detection first (most reliable)
-    try {
-      const { invoke } = await import("@tauri-apps/api/core");
-      const ip = await invoke<string>("get_local_ip");
-      if (ip) return ip;
-    } catch (err) {
-      console.warn("[Platform] Rust get_local_ip failed, falling back to WebRTC:", err);
-    }
-
-    // Try WebRTC approach
-    const webrtcIP = await this.getLocalIPViaWebRTC();
-    if (webrtcIP) return webrtcIP;
-
-    // Fallback: no IP found
-    return "";
-  }
-
-  private async getLocalIPViaWebRTC(): Promise<string> {
-    return new Promise((resolve) => {
-      let resolved = false;
-      const pc = new RTCPeerConnection({
-        iceServers: [],
-      });
-
-      pc.createDataChannel("");
-
-      pc.createOffer()
-        .then((offer) => pc.setLocalDescription(offer))
-        .catch(() => {
-          if (!resolved) {
-            resolved = true;
-            resolve("");
-          }
-        });
-
-      pc.onicecandidate = (event) => {
-        if (!event?.candidate || resolved) return;
-
-        const candidate = event.candidate.candidate;
-        const ipMatch = candidate.match(/(\d+\.\d+\.\d+\.\d+)/);
-        if (ipMatch) {
-          const ip = ipMatch[1];
-          // Check for private IP ranges
-          if (
-            ip.startsWith("192.168.") ||
-            ip.startsWith("10.") ||
-            ip.startsWith("172.16.") ||
-            ip.startsWith("172.17.") ||
-            ip.startsWith("172.18.") ||
-            ip.startsWith("172.19.") ||
-            ip.startsWith("172.20.") ||
-            ip.startsWith("172.21.") ||
-            ip.startsWith("172.22.") ||
-            ip.startsWith("172.23.") ||
-            ip.startsWith("172.24.") ||
-            ip.startsWith("172.25.") ||
-            ip.startsWith("172.26.") ||
-            ip.startsWith("172.27.") ||
-            ip.startsWith("172.28.") ||
-            ip.startsWith("172.29.") ||
-            ip.startsWith("172.30.") ||
-            ip.startsWith("172.31.")
-          ) {
-            resolved = true;
-            pc.close();
-            resolve(ip);
-          }
-        }
-      };
-
-      pc.onicegatheringstatechange = () => {
-        if (pc.iceGatheringState === "complete" && !resolved) {
-          resolved = true;
-          pc.close();
-          resolve("");
-        }
-      };
-
-      setTimeout(() => {
-        if (!resolved) {
-          resolved = true;
-          pc.close();
-          resolve("");
-        }
-      }, 5000);
-    });
-  }
-
-  async startLANServer(
-    port: number,
-    handler: (
-      method: string,
-      path: string,
-      headers: Record<string, string>,
-    ) => Promise<{ status: number; body?: Uint8Array; headers?: Record<string, string> }>,
-  ): Promise<{ port: number; server: unknown }> {
-    ensureTauriRuntimeForLAN();
-
-    const { invoke } = await import("@tauri-apps/api/core");
-    const { listen } = await import("@tauri-apps/api/event");
-
-    const boundPort = await invoke<number>("start_lan_server", { port });
-
-    // Listen for HTTP requests coming from the Rust Axum server
-    const unlisten = await listen<any>("lan-request", async (event) => {
-      const { req_id, method, path, headers } = event.payload;
-      try {
-        const response = await handler(method, path, headers);
-
-        // encode body to base64
-        let resBodyBase64: string | null = null;
-        if (response.body) {
-          resBodyBase64 = this.arrayBufferToBase64(response.body);
-        }
-
-        await invoke("lan_server_respond", {
-          reqId: req_id,
-          payload: {
-            status: response.status,
-            headers: response.headers || {},
-            body_base64: resBodyBase64,
-          },
-        });
-      } catch (e) {
-        console.error("LAN Sync Handler Error:", e);
-        await invoke("lan_server_respond", {
-          reqId: req_id,
-          payload: { status: 500, headers: {}, body_base64: null },
-        });
-      }
-    });
-
-    return { port: boundPort, server: unlisten };
-  }
-
-  async stopLANServer(server: unknown): Promise<void> {
-    ensureTauriRuntimeForLAN();
-
-    const { invoke } = await import("@tauri-apps/api/core");
-    await invoke("stop_lan_server");
-    if (typeof server === "function") {
-      server(); // call unlisten
-    }
-  }
-
-  private arrayBufferToBase64(buffer: ArrayBuffer | Uint8Array): string {
-    let binary = "";
-    const bytes = new Uint8Array(buffer);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return btoa(binary);
   }
 }

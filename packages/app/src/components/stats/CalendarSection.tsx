@@ -3,8 +3,8 @@
  * Desktop behavior intentionally matches mobile stats calendar.
  */
 import { useResolvedSrc } from "@/hooks/use-resolved-src";
-import type { MonthReport, StatsCalendarCell } from "@readany/core/stats";
-import { cn } from "@readany/core/utils";
+import type { MonthReport, StatsCalendarCell } from "@listenmate/core/stats";
+import { cn } from "@listenmate/core/utils";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatCompactMinutes, intensityClass } from "./stats-utils";

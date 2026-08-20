@@ -6,4 +6,4 @@ export {
   loadFromFS,
   flushAllWrites,
   withPersist,
-} from "@readany/core/stores/persist";
+} from "@listenmate/core/stores/persist";

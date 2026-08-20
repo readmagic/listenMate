@@ -1,11 +1,11 @@
-import type { TTSConfig } from "@readany/core/tts";
+import type { TTSConfig } from "@listenmate/core/tts";
 import {
   BrowserTTSPlayer,
   DashScopeTTSPlayer,
   EdgeTTSPlayer,
   OpenAICompatibleTTSPlayer,
   XiaomiTTSPlayer,
-} from "@readany/core/tts";
+} from "@listenmate/core/tts";
 
 const systemPreviewPlayer = new BrowserTTSPlayer();
 const edgePreviewPlayer = new EdgeTTSPlayer();

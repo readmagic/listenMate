@@ -117,7 +117,7 @@ describe("patchEpubMetadataInDraft", () => {
   });
 
   it("patches draft metadata without changing the source EPUB", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-metadata-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-metadata-"));
     const dataDir = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "sample.epub");
     const sourceBytes = buildEpub();
@@ -136,7 +136,7 @@ describe("patchEpubMetadataInDraft", () => {
         title: "Polished Title",
         creator: "Ada Editor",
         language: "zh-CN",
-        publisher: "ReadAny Drafts",
+        publisher: "ListenMate Drafts",
         description: "A cleaned metadata description.",
         subjects: ["AI", "Editing"],
         modified: "2026-06-16T00:00:00Z",
@@ -155,7 +155,7 @@ describe("patchEpubMetadataInDraft", () => {
         title: "Polished Title",
         creator: "Ada Editor",
         language: "zh-CN",
-        publisher: "ReadAny Drafts",
+        publisher: "ListenMate Drafts",
         description: "A cleaned metadata description.",
         modified: "2026-06-16T00:00:00Z",
         subjects: ["AI", "Editing"],

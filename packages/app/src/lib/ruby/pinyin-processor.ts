@@ -108,10 +108,7 @@ const CJK_REGEX = /[一-鿿㐀-䶿豈-﫿]/;
  * Annotate Chinese text with pinyin readings.
  * Strategy: longest-match-first using word dict, then char dict fallback.
  */
-export function annotateChinese(
-  text: string,
-  _mode: "pinyin" | "zhuyin" = "pinyin",
-): RubyToken[] {
+export function annotateChinese(text: string, _mode: "pinyin" | "zhuyin" = "pinyin"): RubyToken[] {
   if ((!_wordDict && !_charDict) || !text) {
     return [{ char: text, reading: "", needsRuby: false }];
   }

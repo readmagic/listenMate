@@ -6,7 +6,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAppStore } from "@/stores/app-store";
 import { useLibraryStore } from "@/stores/library-store";
-import { refreshAndCountUnreadFeedback } from "@readany/core/feedback";
 import {
   BarChart3,
   BookOpen,
@@ -14,23 +13,20 @@ import {
   ChevronRight,
   ChevronsUpDown,
   Hash,
-  HelpCircle,
-  MessageSquare,
   MoreHorizontal,
   NotebookPen,
   Pencil,
   Plus,
-  Puzzle,
   Search,
   Settings,
   Trash2,
   X,
 } from "lucide-react";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 interface NavItem {
-  tabType: "home" | "chat" | "notes" | "skills";
+  tabType: "home" | "notes";
   labelKey: string;
   icon: React.ComponentType<{ className?: string; size?: number }>;
   expandable?: boolean;
@@ -38,13 +34,11 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { tabType: "home", labelKey: "sidebar.library", icon: BookOpen, expandable: true },
-  { tabType: "chat", labelKey: "sidebar.chat", icon: MessageSquare },
   { tabType: "notes", labelKey: "sidebar.notes", icon: NotebookPen },
-  { tabType: "skills", labelKey: "sidebar.skills", icon: Puzzle },
 ];
 
 export function HomeSidebar() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { activeTabId, setActiveTab, addTab } = useAppStore();
   const {
     filter,
@@ -53,7 +47,6 @@ export function HomeSidebar() {
     activeTag,
     activeGroupId,
     groups,
-    isLoaded: libraryLoaded,
     setActiveTag,
     setActiveGroupId,
     addTag,
@@ -62,8 +55,6 @@ export function HomeSidebar() {
     removeGroup,
   } = useLibraryStore();
   const setShowSettings = useAppStore((s) => s.setShowSettings);
-  const showSettings = useAppStore((s) => s.showSettings);
-  const [unreadFeedback, setUnreadFeedback] = useState(0);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [isLibraryExpanded, setIsLibraryExpanded] = useState(true);
   const [isAddingTag, setIsAddingTag] = useState(false);
@@ -73,34 +64,14 @@ export function HomeSidebar() {
   const [isTagsExpanded, setIsTagsExpanded] = useState(false);
   const newTagInputRef = useRef<HTMLInputElement>(null);
 
-  // Refresh unread feedback count on mount and whenever the settings dialog
-  // closes (the user may have marked replies as seen inside it). Depends on
-  // `libraryLoaded` so the first run waits for DB init — otherwise the call
-  // throws on cold start and the dot never appears until the user opens and
-  // closes settings once.
-  useEffect(() => {
-    if (showSettings || !libraryLoaded) return;
-    let cancelled = false;
-    refreshAndCountUnreadFeedback()
-      .then((count) => {
-        if (!cancelled) setUnreadFeedback(count);
-      })
-      .catch((err) => console.warn("[Sidebar] feedback unread refresh:", err));
-    return () => {
-      cancelled = true;
-    };
-  }, [showSettings, libraryLoaded]);
-
   // Determine which home sub-view is active
   const activeTab = useAppStore((s) => s.tabs.find((t) => t.id === activeTabId));
   const activeType = activeTab?.type ?? "home";
 
-  const handleNavClick = (tabType: "home" | "chat" | "notes" | "skills") => {
+  const handleNavClick = (tabType: "home" | "notes") => {
     if (tabType === "home") {
       setActiveTab("home");
     } else {
-      // Add the tab if it doesn't exist, then activate
-      // Use translated title for the tab
       const item = NAV_ITEMS.find((n) => n.tabType === tabType);
       const title = item ? t(item.labelKey) : tabType;
       addTab({ id: tabType, type: tabType, title });
@@ -110,8 +81,6 @@ export function HomeSidebar() {
 
   const handleStatsClick = () => {
     addTab({ id: "stats", type: "home" as const, title: t("stats.title") });
-    // Use a special convention: we set activeTab to "stats" but type is home
-    // Actually, let's keep it simple — stats is a home sub-view triggered by a special tab id
     setActiveTab("stats");
   };
 
@@ -444,15 +413,6 @@ export function HomeSidebar() {
           <BarChart3 size={16} className="shrink-0" />
           <span className="text-sm">{t("stats.title")}</span>
         </button>
-        <a
-          href={`https://codedogqby.github.io/ReadAny/${i18n.language === "zh" ? "zh/" : ""}support/`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex w-full items-center gap-2 rounded-md p-1 py-1 text-left text-muted-foreground text-sm hover:bg-muted hover:text-foreground"
-        >
-          <HelpCircle size={16} className="shrink-0" />
-          <span className="text-sm">{t("settings.supportCenter")}</span>
-        </a>
         <button
           id="tour-settings"
           type="button"
@@ -461,12 +421,6 @@ export function HomeSidebar() {
         >
           <span className="relative shrink-0">
             <Settings size={16} className="shrink-0" />
-            {unreadFeedback > 0 ? (
-              <span
-                className="-right-1 -top-1 absolute h-2 w-2 rounded-full bg-destructive"
-                aria-label={t("feedback.hasNewReply", "有新回复")}
-              />
-            ) : null}
           </span>
           <span className="text-sm">{t("common.settings")}</span>
         </button>

@@ -1,9 +1,3 @@
-import {
-  clearDesktopLibraryRoot,
-  getDefaultDesktopLibraryRoot,
-  getDesktopLibraryRoot,
-  migrateDesktopLibraryRoot,
-} from "@/lib/storage/desktop-library-root";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,6 +7,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  clearDesktopLibraryRoot,
+  getDefaultDesktopLibraryRoot,
+  getDesktopLibraryRoot,
+  migrateDesktopLibraryRoot,
+} from "@/lib/storage/desktop-library-root";
 import { Coffee, FolderOpen, HardDrive, Monitor, Moon, RotateCcw, Sun } from "lucide-react";
 /**
  * GeneralSettings — app-level settings
@@ -39,7 +39,7 @@ export function GeneralSettings() {
   const [migratingLibrary, setMigratingLibrary] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("readany-theme") as ThemeMode | null;
+    const saved = localStorage.getItem("listenmate-theme") as ThemeMode | null;
     if (saved && THEME_CONFIG[saved]) {
       setThemeState(saved);
     }
@@ -80,13 +80,13 @@ export function GeneralSettings() {
   }, []);
 
   const handleLanguageChange = async (lang: string) => {
-    const { changeAndPersistLanguage } = await import("@readany/core/i18n");
+    const { changeAndPersistLanguage } = await import("@listenmate/core/i18n");
     await changeAndPersistLanguage(lang);
   };
 
   const handleThemeChange = (newTheme: ThemeMode) => {
     setThemeState(newTheme);
-    localStorage.setItem("readany-theme", newTheme);
+    localStorage.setItem("listenmate-theme", newTheme);
     if (newTheme === "system") {
       const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       document.documentElement.setAttribute("data-theme", prefersDark ? "dark" : "light");
@@ -244,9 +244,7 @@ export function GeneralSettings() {
             <HardDrive className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-sm font-medium text-foreground">
-              {t("settings.storageLocation")}
-            </h2>
+            <h2 className="text-sm font-medium text-foreground">{t("settings.storageLocation")}</h2>
             <p className="mt-1 text-xs text-muted-foreground">
               {t("settings.storageLocationDesc")}
             </p>
@@ -271,7 +269,11 @@ export function GeneralSettings() {
                 onChange={(e) => setTargetLibraryRoot(e.target.value)}
                 placeholder={t("settings.storageTargetPath")}
               />
-              <Button variant="outline" onClick={handleChooseLibraryFolder} disabled={migratingLibrary}>
+              <Button
+                variant="outline"
+                onClick={handleChooseLibraryFolder}
+                disabled={migratingLibrary}
+              >
                 <FolderOpen className="h-4 w-4" />
                 {t("settings.storageChooseFolder")}
               </Button>

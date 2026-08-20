@@ -3,16 +3,13 @@
  */
 import { DesktopImportActions } from "@/components/home/DesktopImportActions";
 import { GroupPickerPopover } from "@/components/home/GroupPickerPopover";
-import { SyncButton } from "@/components/ui/SyncButton";
-import { triggerVectorizeBook } from "@/lib/rag/vectorize-trigger";
 import { useLibraryStore } from "@/stores/library-store";
-import type { Book, BookGroup, SortField } from "@readany/core/types";
+import type { Book, BookGroup, SortField } from "@listenmate/core/types";
 import {
   ArrowDownAZ,
   ArrowLeft,
   ArrowUpAZ,
   CheckCheck,
-  Database,
   FolderInput,
   FolderMinus,
   Hash,
@@ -251,8 +248,8 @@ export function HomePage() {
       : visibleBooks.length;
 
   type MixedItem =
-    | { type: "group"; group: BookGroup; books: import("@readany/core/types").Book[] }
-    | { type: "book"; book: import("@readany/core/types").Book };
+    | { type: "group"; group: BookGroup; books: import("@listenmate/core/types").Book[] }
+    | { type: "book"; book: import("@listenmate/core/types").Book };
 
   const mixedItems = useMemo((): MixedItem[] => {
     if (!isGroupView || activeGroupId || hasSearch) return [];
@@ -350,15 +347,6 @@ export function HomePage() {
     }
     exitSelectionMode();
   }, [selectedBookIds, removeBook, exitSelectionMode, t]);
-
-  const handleBatchVectorize = useCallback(async () => {
-    if (selectedBookIds.size === 0) return;
-    const selectedBooks = books.filter((b) => selectedBookIds.has(b.id));
-    for (const book of selectedBooks) {
-      triggerVectorizeBook(book.id, book.filePath);
-    }
-    exitSelectionMode();
-  }, [selectedBookIds, books, exitSelectionMode]);
 
   const handleBatchRemoveFromGroup = useCallback(() => {
     if (selectedBookIds.size === 0) return;
@@ -497,14 +485,6 @@ export function HomePage() {
               )}
               <button
                 type="button"
-                className="rounded-lg p-2 text-muted-foreground hover:bg-muted"
-                title={t("home.vec_vectorize", "向量化")}
-                onClick={handleBatchVectorize}
-              >
-                <Database className="size-4" />
-              </button>
-              <button
-                type="button"
                 className="rounded-lg p-2 text-destructive hover:bg-destructive/10"
                 title={t("common.delete", "删除")}
                 onClick={handleBatchDelete}
@@ -568,7 +548,6 @@ export function HomePage() {
                   )}
                 </div>
               )}
-              <SyncButton />
             </div>
             <div className="flex items-center gap-2">
               {books.length > 0 && (

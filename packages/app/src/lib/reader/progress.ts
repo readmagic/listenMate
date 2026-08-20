@@ -1,5 +1,5 @@
 /**
- * Progress tracking — re-exported from @readany/core/reader
+ * Progress tracking — re-exported from @listenmate/core/reader
  */
-export { createProgressTracker, estimateTimeToFinish } from "@readany/core/reader";
-export type { ProgressData } from "@readany/core/reader";
+export { createProgressTracker, estimateTimeToFinish } from "@listenmate/core/reader";
+export type { ProgressData } from "@listenmate/core/reader";

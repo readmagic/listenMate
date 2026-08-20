@@ -1,4 +1,4 @@
-import { cn } from "@readany/core/utils";
+import { cn } from "@listenmate/core/utils";
 import type { InputHTMLAttributes } from "react";
 
 export function Input({ className, type, ...props }: InputHTMLAttributes<HTMLInputElement>) {

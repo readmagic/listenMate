@@ -17,8 +17,8 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@readany/core": ["./src/index.ts"],
-      "@readany/core/*": ["./src/*"]
+      "@listenmate/core": ["./src/index.ts"],
+      "@listenmate/core/*": ["./src/*"]
     }
   },
   "include": ["src"]

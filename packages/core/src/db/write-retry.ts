@@ -10,23 +10,6 @@ export function isRetryableDbError(error: unknown): boolean {
   return RETRYABLE_DB_ERROR_PATTERNS.some((pattern) => message.includes(pattern));
 }
 
-export async function waitForSyncToSettle(timeoutMs = 12000): Promise<void> {
-  try {
-    const { useSyncStore } = await import("../stores/sync-store");
-    const startedAt = Date.now();
-
-    while (Date.now() - startedAt < timeoutMs) {
-      const status = useSyncStore.getState().status;
-      if (status === "idle" || status === "error") {
-        return;
-      }
-      await sleep(200);
-    }
-  } catch {
-    // Ignore if sync store is unavailable in the current environment.
-  }
-}
-
 export async function runWithDbRetry<T>(
   operation: () => Promise<T>,
   options?: {
@@ -37,15 +20,11 @@ export async function runWithDbRetry<T>(
 ): Promise<T> {
   const attempts = options?.attempts ?? 5;
   const initialDelayMs = options?.initialDelayMs ?? 80;
-  const waitForSync = options?.waitForSync ?? true;
   let lastError: unknown;
 
   const run = async (): Promise<T> => {
     for (let attempt = 1; attempt <= attempts; attempt++) {
       try {
-        if (waitForSync) {
-          await waitForSyncToSettle();
-        }
         return await operation();
       } catch (error) {
         lastError = error;

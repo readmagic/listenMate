@@ -1,7 +1,7 @@
 /**
  * HighlightPanel — color picker for highlights
  */
-import type { HighlightColor } from "@readany/core/types";
+import type { HighlightColor } from "@listenmate/core/types";
 import { useTranslation } from "react-i18next";
 
 interface HighlightPanelProps {

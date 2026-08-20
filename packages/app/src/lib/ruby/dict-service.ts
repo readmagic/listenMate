@@ -8,22 +8,22 @@
  * Dictionaries are stored in {appData}/dicts/{lang}/ and loaded on demand.
  */
 
-import { useRubyStore } from "@readany/core/stores/ruby-store";
+import { useRubyStore } from "@listenmate/core/stores/ruby-store";
 import {
-  loadPinyinDicts,
-  isPinyinDictLoaded,
-  PINYIN_WORD_DICT_URL,
+  LEGACY_DICT_FILENAME,
+  PINYIN_CHAR_DICT_FILENAME,
   PINYIN_CHAR_DICT_URL,
   PINYIN_WORD_DICT_FILENAME,
-  PINYIN_CHAR_DICT_FILENAME,
-  LEGACY_DICT_FILENAME,
+  PINYIN_WORD_DICT_URL,
+  isPinyinDictLoaded,
+  loadPinyinDicts,
 } from "./pinyin-processor";
 
 /**
  * Get the dictionary directory path for a language.
  */
 async function getDictDir(lang: "zh" | "ja"): Promise<string> {
-  const { getPlatformService } = await import("@readany/core/services");
+  const { getPlatformService } = await import("@listenmate/core/services");
   const platform = getPlatformService();
   const appData = await platform.getAppDataDir();
   return `${appData}/dicts/${lang}`;
@@ -44,15 +44,18 @@ function parsePinyinTxt(text: string): Record<string, string> {
     if (colonIdx < 0) continue;
 
     const cpStr = trimmed.slice(0, colonIdx).trim(); // "U+XXXX"
-    const rest = trimmed.slice(colonIdx + 1).split("#")[0].trim(); // "pīnyīn,alt"
+    const rest = trimmed
+      .slice(colonIdx + 1)
+      .split("#")[0]
+      .trim(); // "pīnyīn,alt"
 
     try {
-      const cp = parseInt(cpStr.replace("U+", ""), 16);
+      const cp = Number.parseInt(cpStr.replace("U+", ""), 16);
       // Only keep CJK range chars
       if (
         (cp >= 0x4e00 && cp <= 0x9fff) || // CJK Unified
         (cp >= 0x3400 && cp <= 0x4dbf) || // Extension A
-        (cp >= 0xf900 && cp <= 0xfaff)    // Compatibility
+        (cp >= 0xf900 && cp <= 0xfaff) // Compatibility
       ) {
         const char = String.fromCodePoint(cp);
         const pinyin = rest.split(",")[0].trim(); // Take first reading

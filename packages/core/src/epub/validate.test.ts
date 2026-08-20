@@ -159,7 +159,7 @@ describe("validateEpubDraft", () => {
   });
 
   it("validates an active EPUB draft without exposing absolute paths", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-validate-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-validate-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "valid.epub"), buildValidEpub());
     const book = {
@@ -193,7 +193,7 @@ describe("validateEpubDraft", () => {
   });
 
   it("reports structural errors and warnings", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-validate-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-validate-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "invalid.epub"), buildInvalidEpub());
     const book = {
@@ -222,7 +222,7 @@ describe("validateEpubDraft", () => {
   });
 
   it("accepts percent-encoded EPUB hrefs and ignores Kindle internal resource links", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-validate-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-validate-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "encoded.epub"), buildEpubWithEncodedResourceHrefs());
     const book = {

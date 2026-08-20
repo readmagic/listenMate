@@ -1,5 +1,5 @@
 import * as SwitchPrimitive from "@radix-ui/react-switch";
-import { cn } from "@readany/core/utils";
+import { cn } from "@listenmate/core/utils";
 import type { ComponentPropsWithoutRef } from "react";
 
 function Switch({ className, ...props }: ComponentPropsWithoutRef<typeof SwitchPrimitive.Root>) {

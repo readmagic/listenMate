@@ -5,4 +5,4 @@ export {
   useThrottledValue,
   useThrottledCallback,
   useStreamingText,
-} from "@readany/core/hooks/use-throttled-value";
+} from "@listenmate/core/hooks/use-throttled-value";

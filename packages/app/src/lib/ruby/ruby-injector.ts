@@ -5,16 +5,16 @@
  * 1. Inject CSS styles once
  * 2. Walk text nodes in visible blocks
  * 3. Replace text nodes with ruby-annotated HTML
- * 4. Skip elements inside .readany-translation or existing <ruby> tags
+ * 4. Skip elements inside .listenmate-translation or existing <ruby> tags
  *
  * CFI/progress is NOT affected because <ruby> wraps inline around existing text —
  * the text content remains in the DOM tree at the same position.
  */
 
-import type { RubyMode } from "@readany/core/stores/ruby-store";
-import { annotateChinese, isPinyinDictLoaded, type RubyToken } from "./pinyin-processor";
+import type { RubyMode } from "@listenmate/core/stores/ruby-store";
+import { type RubyToken, annotateChinese, isPinyinDictLoaded } from "./pinyin-processor";
 
-const RUBY_STYLE_ID = "readany-ruby-annotation-style";
+const RUBY_STYLE_ID = "listenmate-ruby-annotation-style";
 const RUBY_PROCESSED_ATTR = "data-ruby-processed";
 
 /**
@@ -26,19 +26,19 @@ function injectRubyStyles(doc: Document): void {
   const style = doc.createElement("style");
   style.id = RUBY_STYLE_ID;
   style.textContent = `
-    .readany-ruby rt {
+    .listenmate-ruby rt {
       font-size: 0.5em;
       line-height: 1;
-      color: var(--readany-ruby-color, #888);
+      color: var(--listenmate-ruby-color, #888);
       font-weight: normal;
       user-select: none;
       -webkit-user-select: none;
     }
-    .readany-ruby {
+    .listenmate-ruby {
       ruby-align: center;
     }
     /* Ensure ruby doesn't affect line height too much */
-    .readany-ruby-container {
+    .listenmate-ruby-container {
       ruby-position: over;
       -webkit-ruby-position: before;
     }
@@ -93,7 +93,7 @@ export function removeRubyAnnotations(doc: Document): void {
  * Check if a node should be skipped (translation overlays, existing ruby, etc.)
  */
 function shouldSkipElement(el: Element): boolean {
-  if (el.closest(".readany-translation")) return true;
+  if (el.closest(".listenmate-translation")) return true;
   if (el.closest("ruby")) return true;
   if (el.closest("rt")) return true;
   if (el.closest("rp")) return true;
@@ -169,12 +169,12 @@ export function injectRubyAnnotations(
       // Build ruby HTML
       const span = doc.createElement("span");
       span.setAttribute(RUBY_PROCESSED_ATTR, "true");
-      span.className = "readany-ruby-container";
+      span.className = "listenmate-ruby-container";
 
       for (const token of tokens) {
         if (token.needsRuby && token.reading) {
           const ruby = doc.createElement("ruby");
-          ruby.className = "readany-ruby";
+          ruby.className = "listenmate-ruby";
           ruby.textContent = token.char;
           const rt = doc.createElement("rt");
           rt.textContent = token.reading;

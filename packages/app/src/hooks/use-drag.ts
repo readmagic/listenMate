@@ -1,4 +1,4 @@
 /**
  * useDrag — thin re-export from core
  */
-export { useDrag } from "@readany/core/hooks/use-drag";
+export { useDrag } from "@listenmate/core/hooks/use-drag";

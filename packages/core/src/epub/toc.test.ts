@@ -149,7 +149,7 @@ describe("rebuildEpubTocInDraft", () => {
   });
 
   it("rebuilds EPUB3 nav toc from spine chapters without modifying the source EPUB", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-toc-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-toc-"));
     const dataDir = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "toc.epub");
     const sourceBytes = buildEpubWithStaleToc();
@@ -204,7 +204,7 @@ describe("rebuildEpubTocInDraft", () => {
   });
 
   it("writes toc links relative to the nav document path", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-toc-nested-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-toc-nested-"));
     const dataDir = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "nested.epub");
     await writeFile(sourcePath, buildEpubWithNestedNav());

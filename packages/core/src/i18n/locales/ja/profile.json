@@ -14,7 +14,7 @@
     "avgDaily": "日平均",
     "readingActivity": "読書アクティビティ",
     "viewDetails": "詳細を見る",
-    "version": "ReadAny Mobile v{{version}}",
+    "version": "ListenMate Mobile v{{version}}",
     "storage": "ストレージ",
     "clearCache": "キャッシュを削除",
     "clearingCache": "削除中...",
@@ -51,7 +51,6 @@
     "ebookRenderer": "電子書籍レンダラー",
     "localDatabase": "ローカルデータベース",
     "feedback": "フィードバック",
-    "supportCenter": "サポートセンター",
     "madeBy": "Made with ❤️ by NicePkg"
   },
   "feedback": {

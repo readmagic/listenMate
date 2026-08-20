@@ -105,12 +105,12 @@ const decodePath = (path) =>
     .map((segment) => {
       // Keep encoded separators that would change URL structure after decoding.
       const protectedSegment = segment
-        .replace(/%2f/gi, "__READANY_ENCODED_SLASH__")
-        .replace(/%23/gi, "__READANY_ENCODED_HASH__");
+        .replace(/%2f/gi, "__LISTENMATE_ENCODED_SLASH__")
+        .replace(/%23/gi, "__LISTENMATE_ENCODED_HASH__");
       try {
         return decodeURIComponent(protectedSegment)
-          .replace(/__READANY_ENCODED_SLASH__/g, "%2F")
-          .replace(/__READANY_ENCODED_HASH__/g, "%23");
+          .replace(/__LISTENMATE_ENCODED_SLASH__/g, "%2F")
+          .replace(/__LISTENMATE_ENCODED_HASH__/g, "%23");
       } catch {
         try {
           return decodeURI(segment);

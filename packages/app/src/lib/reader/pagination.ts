@@ -1,10 +1,10 @@
 /**
- * Pagination — re-exported from @readany/core/reader
+ * Pagination — re-exported from @listenmate/core/reader
  */
 export {
   getPageDirection,
   getScrollPageOffset,
   navigatePage,
   calculateProgress,
-} from "@readany/core/reader";
-export type { PageDirection } from "@readany/core/reader";
+} from "@listenmate/core/reader";
+export type { PageDirection } from "@listenmate/core/reader";

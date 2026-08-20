@@ -120,7 +120,7 @@ describe("diffEpubDraft", () => {
   });
 
   it("compares draft EPUB entries without exposing absolute paths", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-diff-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-diff-"));
     const dataDir = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "sample.epub");
     const sourceBytes = buildEpub();

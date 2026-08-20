@@ -1,44 +1,26 @@
 {
-  "name": "readany",
+  "name": "listenmate",
   "private": true,
   "license": "GPL-3.0-or-later",
   "scripts": {
-    "dev": "pnpm --filter app dev",
-    "build": "pnpm --filter app build",
-    "test": "pnpm --filter @readany/core test",
-    "test:core": "pnpm --filter @readany/core test",
-    "cli": "pnpm --filter @readany/cli dev",
-    "cli:build": "pnpm --filter @readany/cli build",
-    "cli:test": "pnpm --filter @readany/cli test",
-    "cli:preflight": "pnpm --filter @readany/cli preflight:release",
-    "cli:preflight:full": "pnpm --filter @readany/cli preflight:release -- --include-app-build",
-    "tauri": "pnpm --filter app tauri",
-    "expo:start": "pnpm --filter @readany/app-expo start",
-    "expo:ios": "pnpm --filter @readany/app-expo ios",
-    "expo:ios:simulator": "pnpm --filter @readany/app-expo ios:simulator",
-    "expo:android": "pnpm --filter @readany/app-expo android",
-    "expo:prebuild": "pnpm --filter @readany/app-expo prebuild",
-    "eas:device:create": "pnpm --filter @readany/app-expo eas:device:create",
-    "eas:build:android": "pnpm --filter @readany/app-expo eas:build:android",
-    "eas:build:ios": "pnpm --filter @readany/app-expo eas:build:ios",
+    "dev": "bun --filter app dev",
+    "build": "bun --filter app build",
+    "test": "bun --filter @listenmate/core test",
+    "test:core": "bun --filter @listenmate/core test",
+    "tauri": "bun --filter app tauri",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "version:check": "node scripts/bump-version.js --check",
     "version:set": "node scripts/bump-version.js"
   },
+  "workspaces": ["packages/*"],
   "devDependencies": {
     "@biomejs/biome": "^1.9.0"
   },
-  "pnpm": {
-    "overrides": {
-      "react": "19.1.0",
-      "react-dom": "19.1.0",
-      "@types/react": "19.1.17"
-    },
-    "patchedDependencies": {
-      "@langchain/core": "patches/@langchain__core.patch",
-      "react-native-track-player@4.1.2": "patches/react-native-track-player@4.1.2.patch"
-    }
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "@types/react": "19.1.17"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "bun@1.3.14"
 }

@@ -2,14 +2,18 @@
  * TopBooksSection.tsx — Top books ranking with expand/collapse.
  */
 import { useResolvedSrc } from "@/hooks/use-resolved-src";
-import type { DailyReadingFact, TopBookEntry } from "@readany/core/stats";
-import { computeBookETA } from "@readany/core/stats";
-import { cn } from "@readany/core/utils";
+import type { DailyReadingFact, TopBookEntry } from "@listenmate/core/stats";
+import { computeBookETA } from "@listenmate/core/stats";
+import { cn } from "@listenmate/core/utils";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { StatsCopy } from "./stats-copy";
-import { formatCharacterCount, formatCharactersPerMinute, formatCompactMinutes } from "./stats-utils";
+import {
+  formatCharacterCount,
+  formatCharactersPerMinute,
+  formatCompactMinutes,
+} from "./stats-utils";
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
  *  Top Books
@@ -97,9 +101,7 @@ function TopBookItem({
       ? computeBookETA(book.bookId, book.progress, book.totalPages, allFacts)
       : null;
   const readingAmountLabel =
-    (book.charactersRead ?? 0) > 0
-      ? formatCharacterCount(book.charactersRead ?? 0, isZh)
-      : null;
+    (book.charactersRead ?? 0) > 0 ? formatCharacterCount(book.charactersRead ?? 0, isZh) : null;
   const readingSpeedLabel =
     (book.avgCharactersPerMinute ?? 0) > 0
       ? formatCharactersPerMinute(book.avgCharactersPerMinute ?? 0, isZh)
@@ -118,19 +120,19 @@ function TopBookItem({
       <div
         className={cn(
           "mt-1 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md text-[11px] font-bold tabular-nums",
-          isFirst
-            ? "bg-primary/8 text-primary/60"
-            : "bg-muted/25 text-muted-foreground/50",
+          isFirst ? "bg-primary/8 text-primary/60" : "bg-muted/25 text-muted-foreground/50",
         )}
       >
         {index + 1}
       </div>
 
       {/* Book cover — matches library style */}
-      <div className={cn(
-        "book-cover-shadow relative flex-shrink-0 overflow-hidden rounded",
-        isFirst ? "w-16" : "w-11",
-      )}>
+      <div
+        className={cn(
+          "book-cover-shadow relative flex-shrink-0 overflow-hidden rounded",
+          isFirst ? "w-16" : "w-11",
+        )}
+      >
         <div className="aspect-[28/41] w-full">
           <BookCover title={book.title} coverUrl={book.coverUrl} />
         </div>

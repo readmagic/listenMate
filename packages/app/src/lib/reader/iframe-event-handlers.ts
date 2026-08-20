@@ -221,9 +221,9 @@ export const handleTouchEnd = (bookKey: string, event: TouchEvent) =>
 export function registerIframeEventHandlers(bookKey: string, doc: Document): void {
   // Avoid double-registering
   // biome-ignore lint: runtime flag on Document
-  if ((doc as any).__readany_events_registered) return;
+  if ((doc as any).__listenmate_events_registered) return;
   // biome-ignore lint: runtime flag on Document
-  (doc as any).__readany_events_registered = true;
+  (doc as any).__listenmate_events_registered = true;
 
   console.log("[iframe-events] Registered handlers for bookKey:", bookKey);
 

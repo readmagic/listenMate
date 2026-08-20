@@ -25,7 +25,7 @@ export function SearchBar({
 }: SearchBarProps) {
   const { t } = useTranslation();
   const [query, setQuery] = useState("");
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     return () => {

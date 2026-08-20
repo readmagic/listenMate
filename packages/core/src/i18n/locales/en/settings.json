@@ -9,34 +9,7 @@
     "translationTab": "Translation",
     "externalAi": "External AI Access",
     "tts": "TTS",
-    "about": "About",
     "other": "More",
-    "aboutDesc": "Read Any, Understand More",
-    "version": "Version",
-    "techStack": "Tech Stack",
-    "techStackTauri": "Cross-platform desktop framework",
-    "techStackReact": "UI component library",
-    "techStackTypeScript": "Type safety",
-    "techStackFoliate": "eBook rendering engine",
-    "feedback": "Feedback",
-    "supportCenter": "Support Center",
-    "license": "Open source under GPL v3 license",
-    "checkUpdate": "Check for Updates",
-    "updateChecking": "Checking...",
-    "updateAvailable": "Update Available",
-    "updateDownloading": "Downloading",
-    "updateReady": "Update Ready",
-    "updateError": "Update Failed",
-    "downloadUpdate": "Download Update",
-    "downloading": "Downloading",
-    "updateReadyMessage": "Update downloaded, restart the app to complete installation",
-    "updateErrorMessage": "Update failed, please try again later",
-    "upToDate": "You're up to date",
-    "relaunch": "Restart App",
-    "dismiss": "Dismiss",
-    "newVersionAvailable": "New version {{version}} available. Download now?",
-    "later": "Later",
-    "ok": "OK",
     "skills": "Skills",
     "language": "Language",
     "general_title": "General",
@@ -52,13 +25,6 @@
     "autoSaveDesc": "How often to save reading progress",
     "languageDesc": "Choose the display language",
     "appearance": "Appearance & Language",
-    "updaterNetworkError": "Cannot connect to update server, please check network",
-    "updaterNoUpdate": "No updates available or service temporarily unavailable",
-    "updaterCheckFailed": "Failed to check for updates",
-    "updaterNoAvailable": "No updates available",
-    "updaterDownloadFailed": "Failed to download update",
-    "updaterRelaunchFailed": "Failed to restart the app. Please reopen it manually to finish installing the update",
-    "relaunching": "Restarting...",
     "reading_title": "Reading",
     "reading_desc": "Customize your reading experience",
     "readingNotice": "Font and layout settings only apply to EPUB and other reflowable formats, not PDF.",
@@ -248,8 +214,8 @@
     "syncUsername": "Username",
     "syncPassword": "Password",
     "syncRemoteRoot": "Remote Folder",
-    "syncRemoteRootPlaceholder": "readany",
-    "syncRemoteRootDesc": "Choose the remote folder used only for ReadAny sync. Nested paths are supported and will be created automatically during test or first sync. ReadAny does not scan books you already placed there; import an existing WebDAV library with \"Connect another WebDAV\".",
+    "syncRemoteRootPlaceholder": "listenmate",
+    "syncRemoteRootDesc": "Choose the remote folder used only for ListenMate sync. Nested paths are supported and will be created automatically during test or first sync. ListenMate does not scan books you already placed there; import an existing WebDAV library with \"Connect another WebDAV\".",
     "syncTestConnection": "Test Connection",
     "syncTesting": "Testing...",
     "syncTestSuccess": "Connection successful",
@@ -325,7 +291,7 @@
     "syncS3Region": "Region",
     "syncS3Bucket": "Bucket",
     "syncS3RemoteRoot": "Sync Folder",
-    "syncS3RemoteRootDesc": "Choose the folder prefix inside this bucket. Nested paths are supported, for example apps/readany.",
+    "syncS3RemoteRootDesc": "Choose the folder prefix inside this bucket. Nested paths are supported, for example apps/listenmate.",
     "syncS3AccessKeyId": "Access Key ID",
     "syncS3SecretAccessKey": "Secret Access Key",
     "syncS3PathStyle": "Use path-style URL",
@@ -346,7 +312,7 @@
     },
     "syncLANQRPlaceholder": "QR code will appear here",
     "syncLANPairCode": "Pair Code",
-    "syncLANServerHint": "Open ReadAny on another device and scan this QR code or enter the pair code to import this device's data there",
+    "syncLANServerHint": "Open ListenMate on another device and scan this QR code or enter the pair code to import this device's data there",
     "syncLANServerStart": "Start Server",
     "syncLANServerStarting": "Starting...",
     "syncLANServerStop": "Stop Server",
@@ -432,17 +398,17 @@
       "overview": {
         "title": "External AI Access Beta",
         "description": "Checks the CLI, Skill, client discovery folders, and MCP configuration. Repair uses the currently selected profile.",
-        "mcpConfigHint": "MCP config means ReadAny appears in common client config files. Restart or open a new session to confirm the tools are actually loaded."
+        "mcpConfigHint": "MCP config means ListenMate appears in common client config files. Restart or open a new session to confirm the tools are actually loaded."
       },
       "cli": {
-        "title": "ReadAny CLI",
+        "title": "ListenMate CLI",
         "description": "The desktop app only runs approved CLI checks, not arbitrary shell commands.",
         "notInstalledOrPath": "Not installed or unavailable in PATH",
         "runtimeEvidence": "Runtime / packaging evidence"
       },
       "agent": {
         "title": "Agent bootstrap",
-        "description": "Copy this command to an external AI. It installs the ReadAny CLI and Skill, then returns an MCP config snippet.",
+        "description": "Copy this command to an external AI. It installs the ListenMate CLI and Skill, then returns an MCP config snippet.",
         "clientDiscoveryStatus": "Client discovery status",
         "clientDiscoveryEmpty": "Run diagnostics to show client Skill discovery status.",
         "mcpConfigStatus": "MCP config status",
@@ -482,13 +448,13 @@
         "success": "Command completed successfully.",
         "exitStatus": "Command exited with status {{status}}",
         "accessUninstalled": "External AI access and CLI have been uninstalled.",
-        "cliUninstalled": "ReadAny CLI has been uninstalled."
+        "cliUninstalled": "ListenMate CLI has been uninstalled."
       },
       "skillPrompt": {
-        "intro": "Please directly install and enable the ReadAny external AI Skill for me.",
+        "intro": "Please directly install and enable the ListenMate external AI Skill for me.",
         "execute": "Do not only explain the steps, and do not output an installation path table. Please run:",
         "mergeConfig": "If you can modify the current AI client configuration, merge the MCP config directly; otherwise give me only the shortest necessary config snippet.",
-        "done": "When finished, reply only: ReadAny Skill is installed. Please restart or open a new session in the current AI client.",
+        "done": "When finished, reply only: ListenMate Skill is installed. Please restart or open a new session in the current AI client.",
         "protectBooks": "Do not modify, export, or delete my book content."
       },
       "status": {
@@ -516,7 +482,7 @@
         "unmanaged": "Unmanaged",
         "checked": "Checked",
         "notFound": "Not found",
-        "containsReadAny": "Has readany",
+        "containsListenMate": "Has listenmate",
         "needsConfig": "Needs config"
       },
       "actions": {
@@ -580,15 +546,15 @@
           "ok": "better-sqlite3 is available for library and MCP data commands.",
           "fail": "better-sqlite3 is unavailable; library and MCP data commands may fail."
         },
-        "readanyHome": {
-          "name": "ReadAny home",
-          "ok": "ReadAny home is writable.",
-          "fail": "ReadAny home is not writable."
+        "listenmateHome": {
+          "name": "ListenMate home",
+          "ok": "ListenMate home is writable.",
+          "fail": "ListenMate home is not writable."
         },
         "skill": {
           "name": "Skill",
-          "ok": "ReadAny Skill is installed at {{path}}.",
-          "fail": "ReadAny Skill is not installed at {{path}}."
+          "ok": "ListenMate Skill is installed at {{path}}.",
+          "fail": "ListenMate Skill is not installed at {{path}}."
         }
       }
     }

@@ -146,7 +146,7 @@ describe("exportBookNotes", () => {
   });
 
   it("writes a single-book notes export and returns file metadata", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-notes-export-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-notes-export-"));
     await useTestPlatform(root);
     const outputPath = join(root, "exports", "notes.md");
 
@@ -172,7 +172,7 @@ describe("exportBookNotes", () => {
   });
 
   it("does not overwrite an existing export unless explicitly allowed", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-notes-export-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-notes-export-"));
     await useTestPlatform(root);
     const outputPath = join(root, "notes.json");
     await writeFile(outputPath, "existing", "utf8");

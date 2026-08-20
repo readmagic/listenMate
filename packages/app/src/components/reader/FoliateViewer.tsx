@@ -3,17 +3,12 @@ import { useFoliateEvents } from "@/hooks/reader/useFoliateEvents";
 import type { FoliateView } from "@/hooks/reader/useFoliateView";
 import { wrappedFoliateView } from "@/hooks/reader/useFoliateView";
 import { usePagination } from "@/hooks/reader/usePagination";
-import { readingContextService } from "@/lib/ai/reading-context-service";
 import type { BookDoc, BookFormat } from "@/lib/reader/document-loader";
 import { getDirection, isFixedLayoutBook } from "@/lib/reader/document-loader";
 import { getFontTheme } from "@/lib/reader/font-themes";
 import { registerIframeEventHandlers } from "@/lib/reader/iframe-event-handlers";
-import type {
-  ChapterParagraph,
-  ChapterTranslationResult,
-} from "@readany/core/translation/chapter-translator";
-import { cleanText, isTTSFootnoteMarker, shouldSkipTTSNode } from "@readany/core/tts";
-import type { ViewSettings } from "@readany/core/types";
+import { cleanText, isTTSFootnoteMarker, shouldSkipTTSNode } from "@listenmate/core/tts";
+import type { ViewSettings } from "@listenmate/core/types";
 import { Overlayer } from "foliate-js/overlayer.js";
 import { marked } from "marked";
 /**
@@ -41,7 +36,7 @@ const THEME_COLORS: Record<AppTheme, { bg: string; fg: string; link: string }> =
   sepia: { bg: "#f0e6d2", fg: "#3d2b1f", link: "#6b4c2a" },
 };
 
-const READER_OVERRIDE_STYLE_ID = "__readany_reader_overrides__";
+const READER_OVERRIDE_STYLE_ID = "__listenmate_reader_overrides__";
 
 function getAppTheme(): AppTheme {
   if (typeof document === "undefined") return "dark";
@@ -91,10 +86,7 @@ function analyzeCanvasIsLight(canvas: HTMLCanvasElement): boolean {
 }
 
 /** The PDF page canvas is rendered asynchronously (pdf.js); wait until it appears. */
-function waitForPdfPageCanvas(
-  doc: Document,
-  timeoutMs = 5000,
-): Promise<HTMLCanvasElement | null> {
+function waitForPdfPageCanvas(doc: Document, timeoutMs = 5000): Promise<HTMLCanvasElement | null> {
   return new Promise((resolve) => {
     const win = doc.defaultView ?? window;
     const raf =
@@ -115,61 +107,6 @@ function waitForPdfPageCanvas(
       raf(check);
     };
     check();
-  });
-}
-
-function getActiveContentDocument(view: FoliateView | null): Document | null {
-  const contents = view?.renderer?.getContents?.();
-  return (contents?.[0]?.doc as Document | undefined) ?? null;
-}
-
-function getLayoutSignature(view: FoliateView | null, doc: Document | null): string {
-  const root = doc?.documentElement;
-  const body = doc?.body;
-  const renderer = view?.renderer;
-  return [
-    root?.scrollWidth ?? 0,
-    root?.scrollHeight ?? 0,
-    body?.scrollWidth ?? 0,
-    body?.scrollHeight ?? 0,
-    renderer?.page ?? "",
-    renderer?.pages ?? "",
-  ].join(":");
-}
-
-function waitForReaderLayoutStable(view: FoliateView | null): Promise<void> {
-  const doc = getActiveContentDocument(view);
-  const win = doc?.defaultView ?? window;
-  const requestFrame =
-    typeof win.requestAnimationFrame === "function"
-      ? win.requestAnimationFrame.bind(win)
-      : (callback: FrameRequestCallback) =>
-          window.setTimeout(() => callback(performance.now()), 16);
-
-  return new Promise((resolve) => {
-    let previous = getLayoutSignature(view, doc);
-    let stableFrames = 0;
-    let frames = 0;
-
-    const tick = () => {
-      frames += 1;
-      const next = getLayoutSignature(view, doc);
-      if (next === previous) {
-        stableFrames += 1;
-      } else {
-        stableFrames = 0;
-        previous = next;
-      }
-
-      if (stableFrames >= 2 || frames >= 12) {
-        resolve();
-        return;
-      }
-
-      requestFrame(tick);
-    };
-
-    requestFrame(tick);
   });
 }
 
@@ -283,7 +220,7 @@ function getSelectionAdvanceIntent(
   }
 }
 
-const REMOTE_FONT_LINK_ATTR = "data-readany-remote-font-link";
+const REMOTE_FONT_LINK_ATTR = "data-listenmate-remote-font-link";
 
 function normalizeTTSSegmentText(text?: string | null) {
   return cleanText(String(text || ""));
@@ -720,20 +657,6 @@ export interface FoliateViewerHandle {
     after?: number,
   ) => Promise<{ before: TTSSegmentDetail[]; after: TTSSegmentDetail[] }>;
   setTTSHighlight: (cfi: string | null, color?: string) => Promise<void>;
-  /** Extract all paragraphs from current section for chapter translation */
-  getChapterParagraphs: () => ChapterParagraph[];
-  /** Inject translated paragraphs below each original paragraph */
-  injectChapterTranslations: (
-    results: ChapterTranslationResult[],
-    visibility?: { originalVisible: boolean; translationVisible: boolean },
-  ) => Promise<void>;
-  /** Remove all injected chapter translation elements */
-  removeChapterTranslations: () => void;
-  /** Apply visibility settings to original and translation elements */
-  applyChapterTranslationVisibility: (
-    originalVisible: boolean,
-    translationVisible: boolean,
-  ) => void;
   /** Inject ruby (pinyin/furigana) annotations into current document */
   injectRuby: (mode: "zh-pinyin" | "zh-zhuyin" | "ja") => Promise<void>;
   /** Remove all ruby annotations from current document */
@@ -816,7 +739,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         doc.documentElement.style.backgroundColor = background;
         if (doc.body) doc.body.style.backgroundColor = background;
         if (!filter) {
-          doc.documentElement.style.setProperty("--readany-pdf-filter", "none");
+          doc.documentElement.style.setProperty("--listenmate-pdf-filter", "none");
           return;
         }
         let cache = pdfPageLightCacheRef.current.get(bookKey);
@@ -830,10 +753,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
           isLight = canvas ? analyzeCanvasIsLight(canvas) : true;
           cache.set(index, isLight);
         }
-        doc.documentElement.style.setProperty(
-          "--readany-pdf-filter",
-          isLight ? filter : "none",
-        );
+        doc.documentElement.style.setProperty("--listenmate-pdf-filter", isLight ? filter : "none");
       },
       [bookKey],
     );
@@ -857,12 +777,12 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
           doc.documentElement.style.backgroundColor = background;
           if (doc.body) doc.body.style.backgroundColor = background;
           if (!filter) {
-            doc.documentElement.style.setProperty("--readany-pdf-filter", "none");
+            doc.documentElement.style.setProperty("--listenmate-pdf-filter", "none");
             continue;
           }
           const isLight = cache?.get(index);
           doc.documentElement.style.setProperty(
-            "--readany-pdf-filter",
+            "--listenmate-pdf-filter",
             isLight === false ? "none" : filter,
           );
         }
@@ -1027,7 +947,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         for (const content of contents) {
           if (!content?.overlayer) continue;
           try {
-            content.overlayer.remove("readany-tts-engine-hl");
+            content.overlayer.remove("listenmate-tts-engine-hl");
           } catch {
             // no-op
           }
@@ -1036,7 +956,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         try {
           const overlayer = renderTarget.overlayer;
           if (!overlayer) return cfi;
-          overlayer.add("readany-tts-engine-hl", renderRange, Overlayer.highlight, {
+          overlayer.add("listenmate-tts-engine-hl", renderRange, Overlayer.highlight, {
             color: ttsHighlightStateRef.current.color || "rgba(96, 165, 250, 0.35)",
           });
         } catch {
@@ -1159,7 +1079,9 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
 
         const isRectVisibleInReader = (rect: DOMRect, doc?: Document | null) => {
           if (!rect || rect.width <= 0 || rect.height <= 0) return false;
-          const isPaginated = !renderer.scrolled;
+          // FixedLayout (PDF/CBZ) renderer 没有 start/end/size/scrolled 属性，
+          // 每个 iframe 即一页，iframe 在视口内则整页可见，走 host-rect 判断即可。
+          const isPaginated = !renderer.scrolled && !isFixedLayout;
           if (isPaginated) {
             const visibleRange = doc ? getVisibleRangeForDoc(doc) : null;
             return visibleRange ? rectIntersectsPaginatedRange(rect, visibleRange) : false;
@@ -1212,7 +1134,10 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         const seenVisibleIdentities = new Set<string>();
         for (const current of scanContents) {
           const doc = current?.doc as Document | undefined;
-          const sectionIndex = current?.index ?? 0;
+          // FixedLayout (PDF/CBZ) 的 getContents() 不返回 index，用 pdfDocIndexRef
+          // 在 onSectionLoad 时记录的 doc→index 映射补齐，避免 sectionIndex 总是 0。
+          const sectionIndex =
+            current?.index ?? (doc ? pdfDocIndexRef.current.get(doc) ?? 0 : 0);
           if (!doc) continue;
 
           let visibleBlocks = Array.from(doc.querySelectorAll(blockSelector)).filter((block) => {
@@ -1220,6 +1145,23 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             if (shouldSkipTTSNode(block)) return false;
             return isRectVisibleInReader(block.getBoundingClientRect(), doc);
           });
+
+          // FixedLayout (PDF/CBZ): textLayer 里的 <span> 是 absolute 定位、按 PDF
+          // 文本项切分（常为单行或更碎），且 markedContent span 会嵌套子 span。
+          // 若走下面的逐 span fallback，markedContent 与其子 span 会被同时选中，
+          // 生成重复/碎片化 segments。这里直接把整个 textLayer 作为单个 block，
+          // walker 从 textLayer 收集所有 text 生成合并文本，句子分割对整页做。
+          if (isFixedLayout && visibleBlocks.length === 0) {
+            const textLayer = doc.querySelector(".textLayer");
+            if (
+              textLayer &&
+              textLayer.textContent?.trim() &&
+              !shouldSkipTTSNode(textLayer) &&
+              isRectVisibleInReader(textLayer.getBoundingClientRect(), doc)
+            ) {
+              visibleBlocks = [textLayer];
+            }
+          }
 
           // Fallback: if no standard block elements found (e.g., epub uses only
           // <div>/<span> for text), try broader selectors
@@ -1246,6 +1188,17 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             isRectVisibleInReader(doc.body.getBoundingClientRect(), doc)
           ) {
             visibleBlocks = [doc.body];
+          }
+
+          if (isFixedLayout) {
+            const totalSpans = doc.querySelectorAll(".textLayer > span").length;
+            console.log("[FoliateViewer][TTS] pdf page blocks", {
+              sectionIndex,
+              totalSpans,
+              visibleBlocks: visibleBlocks.length,
+              firstBlockText:
+                (visibleBlocks[0] as HTMLElement | null)?.textContent?.slice(0, 40) || null,
+            });
           }
 
           for (const block of visibleBlocks) {
@@ -1283,6 +1236,35 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
                   return acc;
                 }, []);
 
+            // 合并短 segment（如孤立标题行）到下一个，避免朗读时短句后停顿。
+            // PDF textLayer 按 PDF 文本项切分 span，segmenter 常在行末换行处断句，
+            // 导致标题这种短行单独成段。这里把短 segment 和下一个合并。
+            const MIN_SEGMENT_LEN = 30;
+            const mergedRawSegments: Array<{ start: number; end: number }> = [];
+            for (let i = 0; i < rawSegments.length; i++) {
+              const seg = rawSegments[i];
+              const len = seg.end - seg.start;
+              if (len < MIN_SEGMENT_LEN && i + 1 < rawSegments.length) {
+                mergedRawSegments.push({ start: seg.start, end: rawSegments[i + 1].end });
+                i += 1; // 跳过下一个（已合并）
+              } else {
+                mergedRawSegments.push(seg);
+              }
+            }
+
+            if (isFixedLayout) {
+              console.log("[FoliateViewer][TTS] pdf segments", {
+                sectionIndex,
+                absoluteLen: absoluteText.length,
+                rawCount: rawSegments.length,
+                mergedCount: mergedRawSegments.length,
+                rawPreview: rawSegments.slice(0, 5).map((s) => ({
+                  len: s.end - s.start,
+                  text: absoluteText.slice(s.start, s.end).slice(0, 30),
+                })),
+              });
+            }
+
             const resolvePosition = (absoluteOffset: number, isEnd: boolean) => {
               for (const item of positionedNodes) {
                 if (absoluteOffset < item.end || (isEnd && absoluteOffset <= item.end)) {
@@ -1299,8 +1281,8 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
               return { node: last.node, offset: last.node.nodeValue?.length ?? 0 };
             };
 
-            for (const rawSegment of rawSegments.length
-              ? rawSegments
+            for (const rawSegment of mergedRawSegments.length
+              ? mergedRawSegments
               : [{ start: 0, end: absoluteText.length }]) {
               let start = rawSegment.start;
               let end = rawSegment.end;
@@ -1457,7 +1439,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         });
         return segments;
       },
-      [ensureDesktopTTS],
+      [ensureDesktopTTS, isFixedLayout],
     );
 
     const getTTSSegmentContext = useCallback(
@@ -1558,7 +1540,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             return;
           }
 
-          const tempKey = `readany-temp-tts:${cfi}`;
+          const tempKey = `listenmate-temp-tts:${cfi}`;
           const paintTemporaryHighlight = (attempt = 0) => {
             try {
               const resolved = view.resolveCFI?.(cfi);
@@ -1748,162 +1730,6 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             // no-op
           }
         },
-        getChapterParagraphs: () => {
-          try {
-            const renderer = viewRef.current?.renderer;
-            const contents = renderer?.getContents?.();
-            if (!contents?.[0]?.doc) return [];
-            const doc = contents[0].doc as Document;
-
-            const blockSelector =
-              "p, h1, h2, h3, h4, h5, h6, li, blockquote, dd, dt, figcaption, pre, td, th";
-            const blocks = doc.querySelectorAll(blockSelector);
-            const paragraphs: ChapterParagraph[] = [];
-
-            blocks.forEach((el, i) => {
-              const text = (el as HTMLElement).innerText?.trim() || el.textContent?.trim() || "";
-              if (text.length < 2) return;
-              const id = `para_${i}`;
-              (el as HTMLElement).setAttribute("data-translate-id", id);
-              paragraphs.push({
-                id,
-                text,
-                tagName: el.tagName.toLowerCase(),
-              });
-            });
-
-            return paragraphs;
-          } catch {
-            return [];
-          }
-        },
-        injectChapterTranslations: async (
-          results: ChapterTranslationResult[],
-          visibility = { originalVisible: true, translationVisible: true },
-        ) => {
-          try {
-            const view = viewRef.current;
-            const renderer = view?.renderer;
-            const contents = renderer?.getContents?.();
-            if (!contents?.[0]?.doc) return;
-            const doc = contents[0].doc as Document;
-
-            // Inject translation CSS once
-            if (!doc.getElementById("readany-chapter-translation-style")) {
-              const style = doc.createElement("style");
-              style.id = "readany-chapter-translation-style";
-              style.textContent = `
-                .readany-translation {
-                  color: #6b7280;
-                  font-size: 0.9em;
-                  line-height: 1.5;
-                  margin-top: 4px;
-                  margin-bottom: 8px;
-                  padding-left: 8px;
-                  border-left: 2px solid #d1d5db;
-                  opacity: 0.85;
-                }
-                .readany-translation[data-hidden="true"] { display: none; }
-                .readany-translation[data-solo="true"] {
-                  color: inherit;
-                  font-size: inherit;
-                  line-height: inherit;
-                  margin-top: 0;
-                  margin-bottom: 0.8em;
-                  padding-left: 0;
-                  border-left: none;
-                  opacity: 1;
-                }
-                [data-translate-id][data-original-hidden="true"] { display: none; }
-                @media (prefers-color-scheme: dark) {
-                  .readany-translation { color: #9ca3af; border-left-color: #4b5563; }
-                }
-              `;
-              doc.head.appendChild(style);
-            }
-
-            for (const result of results) {
-              if (!result.translatedText) continue;
-              const el = doc.querySelector(
-                `[data-translate-id="${result.paragraphId}"]`,
-              ) as HTMLElement | null;
-              if (!el) continue;
-              el.setAttribute("data-original-hidden", String(!visibility.originalVisible));
-              // Skip if already injected
-              if (el.nextElementSibling?.classList?.contains("readany-translation")) {
-                const existing = el.nextElementSibling as HTMLElement;
-                existing.setAttribute("data-hidden", String(!visibility.translationVisible));
-                existing.setAttribute(
-                  "data-solo",
-                  String(!visibility.originalVisible && visibility.translationVisible),
-                );
-                continue;
-              }
-
-              const div = doc.createElement("div");
-              div.className = "readany-translation";
-              div.setAttribute("data-para-id", result.paragraphId);
-              div.setAttribute("data-hidden", String(!visibility.translationVisible));
-              div.setAttribute(
-                "data-solo",
-                String(!visibility.originalVisible && visibility.translationVisible),
-              );
-              div.textContent = result.translatedText;
-              el.parentNode?.insertBefore(div, el.nextSibling);
-            }
-
-            await waitForReaderLayoutStable(view);
-          } catch (err) {
-            console.error("[injectChapterTranslations] Error:", err);
-          }
-        },
-        removeChapterTranslations: () => {
-          try {
-            const renderer = viewRef.current?.renderer;
-            const contents = renderer?.getContents?.();
-            if (!contents?.[0]?.doc) return;
-            const doc = contents[0].doc as Document;
-
-            const elements = doc.querySelectorAll(".readany-translation");
-            elements.forEach((el) => el.remove());
-
-            const style = doc.getElementById("readany-chapter-translation-style");
-            style?.remove();
-          } catch (err) {
-            console.error("[removeChapterTranslations] Error:", err);
-          }
-        },
-        applyChapterTranslationVisibility: (
-          originalVisible: boolean,
-          translationVisible: boolean,
-        ) => {
-          try {
-            const renderer = viewRef.current?.renderer;
-            const contents = renderer?.getContents?.();
-            if (!contents?.[0]?.doc) return;
-            const doc = contents[0].doc as Document;
-
-            // Update original paragraphs visibility
-            const originalParagraphs = doc.querySelectorAll("[data-translate-id]");
-            originalParagraphs.forEach((el) => {
-              (el as HTMLElement).setAttribute("data-original-hidden", String(!originalVisible));
-            });
-
-            // Update translation visibility
-            const translations = doc.querySelectorAll(".readany-translation");
-            translations.forEach((el) => {
-              const translationEl = el as HTMLElement;
-              translationEl.setAttribute("data-hidden", String(!translationVisible));
-              // If only translation is visible (no original), apply solo style
-              translationEl.setAttribute(
-                "data-solo",
-                String(!originalVisible && translationVisible),
-              );
-            });
-          } catch (err) {
-            console.error("[applyChapterTranslationVisibility] Error:", err);
-          }
-        },
         injectRuby: async (mode: "zh-pinyin" | "zh-zhuyin" | "ja") => {
           try {
             const renderer = viewRef.current?.renderer;
@@ -2024,7 +1850,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         // Inject ruby annotations if enabled for this book
         void (async () => {
           try {
-            const { useRubyStore } = await import("@readany/core/stores/ruby-store");
+            const { useRubyStore } = await import("@listenmate/core/stores/ruby-store");
             const rubyMode = useRubyStore.getState().getBookRuby(bookKey);
             if (rubyMode && rubyMode.startsWith("zh")) {
               const { isPinyinDictLoaded } = await import("@/lib/ruby/pinyin-processor");
@@ -2043,7 +1869,16 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
           }
         })();
       },
-      [appTheme, bookKey, viewSettings, onLoaded, onSectionLoad, isFixedLayout, format, applyPdfPageThemeFilter],
+      [
+        appTheme,
+        bookKey,
+        viewSettings,
+        onLoaded,
+        onSectionLoad,
+        isFixedLayout,
+        format,
+        applyPdfPageThemeFilter,
+      ],
     );
     const docLoadHandlerRef = useRef(docLoadHandlerImpl);
     docLoadHandlerRef.current = docLoadHandlerImpl;
@@ -2145,20 +1980,6 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
           } catch {
             // Ignore extraction errors
           }
-
-          readingContextService.updateContext({
-            bookId: bookKey,
-            currentChapter: {
-              index: detail.section?.current ?? 0,
-              title: detail.tocItem.label,
-              href: detail.tocItem.href || "",
-            },
-            currentPosition: {
-              cfi: detail.cfi || "",
-              percentage: detail.fraction * 100,
-            },
-            surroundingText,
-          });
         }
       },
       [onRelocate, bookKey],
@@ -2324,9 +2145,9 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
       (doc: Document) => {
         // Avoid double-registering
         // biome-ignore lint: runtime flag on Document
-        if ((doc as any).__readany_selection_registered) return;
+        if ((doc as any).__listenmate_selection_registered) return;
         // biome-ignore lint: runtime flag on Document
-        (doc as any).__readany_selection_registered = true;
+        (doc as any).__listenmate_selection_registered = true;
 
         let originalScrollLeft = 0;
         let pageDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -2750,15 +2571,6 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         }
 
         // Update reading context service with selection
-        if (cfi && chapterIndex !== undefined) {
-          readingContextService.updateSelection({
-            text,
-            cfi,
-            chapterIndex,
-            chapterTitle: "", // Will be filled by relocate handler
-          });
-        }
-
         return { text, cfi, chapterIndex, rects: offsetRects, range };
       },
       [],
@@ -2857,9 +2669,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
           setViewReady(true);
 
           // Navigate to last location or start
-          if (isFixedLayout) {
-            await view.init({});
-          } else if (lastLocation) {
+          if (lastLocation) {
             try {
               await view.init({ lastLocation });
             } catch (initErr) {
@@ -2867,8 +2677,14 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
                 "[FoliateViewer] Failed to init with lastLocation, falling back to start:",
                 initErr,
               );
-              await view.goToFraction(0);
+              if (isFixedLayout) {
+                await view.init({});
+              } else {
+                await view.goToFraction(0);
+              }
             }
+          } else if (isFixedLayout) {
+            await view.init({});
           } else {
             await view.goToFraction(0);
 
@@ -3130,16 +2946,16 @@ function syncReaderOverrideStyles(view: FoliateView, css: string) {
 }
 
 function normalizeBrOnlyParagraphs(doc: Document) {
-  const docWithMarker = doc as Document & { __readanyBrParagraphsNormalized?: boolean };
-  if (docWithMarker.__readanyBrParagraphsNormalized) return;
-  docWithMarker.__readanyBrParagraphsNormalized = true;
+  const docWithMarker = doc as Document & { __listenmateBrParagraphsNormalized?: boolean };
+  if (docWithMarker.__listenmateBrParagraphsNormalized) return;
+  docWithMarker.__listenmateBrParagraphsNormalized = true;
 
   const body = doc.body;
   if (!body || body.querySelectorAll("p").length > 2) return;
 
-  const containers: Element[] = Array.from(body.querySelectorAll("div, section, article, main")).filter(
-    shouldNormalizeBrParagraphContainer,
-  );
+  const containers: Element[] = Array.from(
+    body.querySelectorAll("div, section, article, main"),
+  ).filter(shouldNormalizeBrParagraphContainer);
   if (shouldNormalizeBrParagraphContainer(body)) containers.push(body);
 
   for (const container of containers) {
@@ -3214,7 +3030,7 @@ function normalizeBrParagraphContainer(doc: Document, container: Element) {
     }
 
     const paragraph = doc.createElement("p");
-    paragraph.className = "__readany_br_paragraph";
+    paragraph.className = "__listenmate_br_paragraph";
     for (const node of pending) paragraph.appendChild(node);
     fragment.appendChild(paragraph);
     pending = [];
@@ -3249,7 +3065,7 @@ function normalizeBrParagraphContainer(doc: Document, container: Element) {
     return false;
   }
   container.replaceChildren(fragment);
-  container.setAttribute("data-readany-br-paragraphs", "");
+  container.setAttribute("data-listenmate-br-paragraphs", "");
   return true;
 }
 
@@ -3363,21 +3179,21 @@ function getRendererStyles(settings: ViewSettings, theme: AppTheme): string {
   const readerFontOverride =
     settings.useBookFonts === false
       ? `html, body {
-  font-family: var(--readany-font-family) !important;
+  font-family: var(--listenmate-font-family) !important;
 }
 body *:not(svg):not(svg *):not(math):not(math *):not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *) {
-  font-family: var(--readany-font-family) !important;
+  font-family: var(--listenmate-font-family) !important;
 }
 `
       : `:where(html) {
-  font-family: var(--readany-font-family);
+  font-family: var(--listenmate-font-family);
 }
 `;
 
   return `${settings.customFontFaceCSS ? `/* Custom font faces */\n${settings.customFontFaceCSS}\n\n` : ""}/* Font styles */
 html {
   --theme-bg-color: ${bgColor};
-  --readany-font-family: ${fontFamily};
+  --listenmate-font-family: ${fontFamily};
   --serif-font: "${fontTheme.serif}";
   --sans-serif-font: "${fontTheme.sansSerif}";
   --cjk-font: "${fontTheme.cjk}";
@@ -3392,7 +3208,7 @@ html, body {
 }
 
 ${readerFontOverride}
-body :not(#__readany_font_size_override):not(svg):not(svg *):not(math):not(math *):not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *):not(rt):not(rp) {
+body :not(#__listenmate_font_size_override):not(svg):not(svg *):not(math):not(math *):not(pre):not(pre *):not(code):not(code *):not(kbd):not(kbd *):not(samp):not(samp *):not(rt):not(rp) {
   font-size: ${settings.fontSize}px !important;
 }
 

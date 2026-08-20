@@ -1,14 +1,3 @@
-import {
-  buildNarrationPreview,
-  DASHSCOPE_VOICES,
-  EDGE_TTS_VOICES,
-  getLocaleDisplayLabel,
-  getTTSVoiceLabel,
-  groupEdgeTTSVoices,
-  type TTSConfig,
-  type TTSPlayState,
-} from "@readany/core/tts";
-import { getSystemVoices } from "@/lib/tts/tts-service";
 import { TTSSleepTimerControl } from "@/components/tts/TTSSleepTimerControl";
 import {
   DEFAULT_SYSTEM_VOICE_VALUE,
@@ -17,6 +6,18 @@ import {
   groupSystemVoiceOptions,
   resolveSystemVoiceValue,
 } from "@/lib/tts/system-voices";
+import { getSystemVoices } from "@/lib/tts/tts-service";
+import { useTTSStore } from "@/stores/tts-store";
+import {
+  DASHSCOPE_VOICES,
+  EDGE_TTS_VOICES,
+  type TTSConfig,
+  type TTSPlayState,
+  buildNarrationPreview,
+  getLocaleDisplayLabel,
+  getTTSVoiceLabel,
+  groupEdgeTTSVoices,
+} from "@listenmate/core/tts";
 import {
   ChevronLeft,
   ChevronRight,
@@ -30,7 +31,6 @@ import {
   SkipForward,
   Square,
 } from "lucide-react";
-import { useTTSStore } from "@/stores/tts-store";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -399,51 +399,53 @@ export function TTSPage({
                     <div className="sticky top-0 z-10 border-b border-border/30 bg-background/95 px-3 py-2 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                       {t("tts.selectEngine")}
                     </div>
-                    {(["edge", "dashscope", "xiaomi", "openai-compatible", "system"] as const).map((eng) => {
-                      const isActive = config.engine === eng;
-                      const label =
-                        eng === "edge"
-                          ? "Edge TTS"
-                          : eng === "dashscope"
-                            ? "DashScope"
-                            : eng === "xiaomi"
-                              ? "Xiaomi MiMo"
-                              : eng === "openai-compatible"
-                                ? "OpenAI Compatible"
-                                : t("tts.system");
-                      const desc =
-                        eng === "edge"
-                          ? t("tts.engineDescEdge")
-                          : eng === "dashscope"
-                            ? t("tts.engineDescDashscope")
-                            : eng === "xiaomi"
-                              ? "MiMo-V2.5-TTS"
-                              : eng === "openai-compatible"
-                                ? "OpenAI audio endpoint"
-                                : t("tts.engineDescSystem");
-                      return (
-                        <button
-                          key={eng}
-                          type="button"
-                          onClick={() => onUpdateConfig({ engine: eng })}
-                          className={`flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-muted ${isActive ? "bg-primary/5" : ""}`}
-                        >
-                          <span className="flex flex-col">
-                            <span
-                              className={`text-xs font-semibold ${isActive ? "text-primary" : "text-foreground"}`}
-                            >
-                              {label}
+                    {(["edge", "dashscope", "xiaomi", "openai-compatible", "system"] as const).map(
+                      (eng) => {
+                        const isActive = config.engine === eng;
+                        const label =
+                          eng === "edge"
+                            ? "Edge TTS"
+                            : eng === "dashscope"
+                              ? "DashScope"
+                              : eng === "xiaomi"
+                                ? "Xiaomi MiMo"
+                                : eng === "openai-compatible"
+                                  ? "OpenAI Compatible"
+                                  : t("tts.system");
+                        const desc =
+                          eng === "edge"
+                            ? t("tts.engineDescEdge")
+                            : eng === "dashscope"
+                              ? t("tts.engineDescDashscope")
+                              : eng === "xiaomi"
+                                ? "MiMo-V2.5-TTS"
+                                : eng === "openai-compatible"
+                                  ? "OpenAI audio endpoint"
+                                  : t("tts.engineDescSystem");
+                        return (
+                          <button
+                            key={eng}
+                            type="button"
+                            onClick={() => onUpdateConfig({ engine: eng })}
+                            className={`flex w-full items-center justify-between px-3 py-2.5 text-left transition-colors hover:bg-muted ${isActive ? "bg-primary/5" : ""}`}
+                          >
+                            <span className="flex flex-col">
+                              <span
+                                className={`text-xs font-semibold ${isActive ? "text-primary" : "text-foreground"}`}
+                              >
+                                {label}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground/70">{desc}</span>
                             </span>
-                            <span className="text-[10px] text-muted-foreground/70">{desc}</span>
-                          </span>
-                          {isActive && (
-                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                              ✓
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
+                            {isActive && (
+                              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                                ✓
+                              </span>
+                            )}
+                          </button>
+                        );
+                      },
+                    )}
 
                     {/* Voice section */}
                     {config.engine !== "system" && (

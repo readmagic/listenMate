@@ -14,7 +14,7 @@
     "avgDaily": "日均",
     "readingActivity": "阅读活动",
     "viewDetails": "查看详情",
-    "version": "ReadAny Mobile v{{version}}",
+    "version": "ListenMate Mobile v{{version}}",
     "storage": "存储",
     "clearCache": "清除缓存",
     "clearingCache": "清除中...",
@@ -51,7 +51,6 @@
     "ebookRenderer": "电子书渲染",
     "localDatabase": "本地数据库",
     "feedback": "问题反馈",
-    "supportCenter": "帮助中心",
     "madeBy": "由 NicePkg 用 ❤️ 打造"
   },
   "feedback": {

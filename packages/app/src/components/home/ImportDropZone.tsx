@@ -82,7 +82,11 @@ export function ImportDropZone() {
               className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               <span className="flex items-center gap-1.5">
-                {isImporting ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
+                {isImporting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Plus className="size-4" />
+                )}
                 {isImporting ? t("library.importing", "导入中...") : t("home.importBooks")}
               </span>
             </button>

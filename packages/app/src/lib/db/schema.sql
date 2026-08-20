@@ -1,4 +1,4 @@
--- ReadAny Database Schema
+-- ListenMate Database Schema
 -- SQLite
 
 CREATE TABLE IF NOT EXISTS books (

@@ -1,6 +1,5 @@
 import type { Book } from "../types";
 import { eventBus } from "../utils/event-bus";
-import { deleteChunks } from "./chunk-queries";
 import {
   getDB,
   getDeviceId,
@@ -9,7 +8,6 @@ import {
   nextUpdatedAt,
   parseJSON,
 } from "./db-core";
-import { deleteThreadsByBookId } from "./thread-queries";
 
 interface BookRow {
   id: string;
@@ -349,11 +347,7 @@ export async function deleteBook(id: string, options: DeleteBookOptions = {}): P
   if (preserveData) {
     const deletedAt = Date.now();
 
-    // Keep notes/highlights/bookmarks and reading sessions, but remove chat
-    // threads and vector chunks tied to the deleted book payload.
-    await deleteThreadsByBookId(id);
-    await deleteChunks(id);
-
+    // Keep notes/highlights/bookmarks and reading sessions.
     const deviceId = await getDeviceId();
     const syncVersion = await nextSyncVersion(database, "books");
     const updatedAt = await nextUpdatedAt(database, "books", id);
@@ -387,8 +381,6 @@ export async function deleteBook(id: string, options: DeleteBookOptions = {}): P
   await database.execute("DELETE FROM notes WHERE book_id = ?", [id]);
   await database.execute("DELETE FROM bookmarks WHERE book_id = ?", [id]);
   await database.execute("DELETE FROM reading_sessions WHERE book_id = ?", [id]);
-  await deleteThreadsByBookId(id);
-  await deleteChunks(id);
   await insertTombstone(database, id, "books");
   await database.execute("DELETE FROM books WHERE id = ?", [id]);
 }

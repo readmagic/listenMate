@@ -1,5 +1,5 @@
 /**
- * @readany/core hooks — reader sub-module
+ * @listenmate/core hooks — reader sub-module
  */
 export { type FoliateView, wrappedFoliateView } from "./useFoliateView";
 export { useFoliateEvents, type FoliateEventHandlers } from "./useFoliateEvents";

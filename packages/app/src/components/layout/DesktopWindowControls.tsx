@@ -1,9 +1,9 @@
-import { cn } from "@readany/core/utils";
+import { cn } from "@listenmate/core/utils";
+import type { Window as TauriWindow } from "@tauri-apps/api/window";
 import { X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { useTranslation } from "react-i18next";
-import type { Window as TauriWindow } from "@tauri-apps/api/window";
 import type { RefObject } from "react";
+import { useTranslation } from "react-i18next";
 
 const NO_DRAG_STYLE = { WebkitAppRegion: "no-drag" } as Record<string, string>;
 const WINDOW_LOG_PREFIX = "[DesktopWindowControls]";
@@ -329,7 +329,15 @@ export function DesktopWindowControls({
           onClick={(e) => {
             void handleToggleMaximize(e);
           }}
-          title={isMacPlatform ? (isFullscreen ? t("window.exitFullscreen") : t("window.enterFullscreen")) : isMaximized ? t("window.restore") : t("window.maximize")}
+          title={
+            isMacPlatform
+              ? isFullscreen
+                ? t("window.exitFullscreen")
+                : t("window.enterFullscreen")
+              : isMaximized
+                ? t("window.restore")
+                : t("window.maximize")
+          }
           style={NO_DRAG_STYLE}
           data-no-window-drag
           data-tauri-drag-region="false"
@@ -364,7 +372,14 @@ export function DesktopWindowControls({
             </svg>
           ) : (
             <svg width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden="true">
-              <rect x="0.8" y="0.8" width="7.4" height="7.4" stroke="currentColor" strokeWidth="1" />
+              <rect
+                x="0.8"
+                y="0.8"
+                width="7.4"
+                height="7.4"
+                stroke="currentColor"
+                strokeWidth="1"
+              />
             </svg>
           )}
         </button>

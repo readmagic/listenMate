@@ -1,4 +1,4 @@
-import { cn } from "@readany/core/utils";
+import { cn } from "@listenmate/core/utils";
 import Placeholder from "@tiptap/extension-placeholder";
 import { Markdown } from "@tiptap/markdown";
 import { EditorContent, useEditor } from "@tiptap/react";

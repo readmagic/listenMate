@@ -1,6 +1,6 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
-import i18n from "@readany/core/i18n";
+import i18n from "@listenmate/core/i18n";
 
 export function startTour() {
   const d = driver({
@@ -39,38 +39,11 @@ export function startTour() {
         },
       },
       {
-        element: "#tour-vectorize",
-        popover: {
-          title: i18n.t("tour.vectorize.title", "Smart Vectorization"),
-          description: i18n.t(
-            "tour.vectorize.desc",
-            "Build a semantic index for powerful AI search and chat.",
-          ),
-          side: "right",
-          align: "start",
-        },
-      },
-      {
         element: "#tour-settings",
         popover: {
           title: i18n.t("tour.settings.title", "Settings"),
-          description: i18n.t(
-            "tour.settings.desc",
-            "Configure AI provider, translation engine, sync and more.",
-          ),
+          description: i18n.t("tour.settings.desc", "Configure reading, fonts, TTS and more."),
           side: "right",
-          align: "start",
-        },
-      },
-      {
-        element: "#tour-sync-backend",
-        popover: {
-          title: i18n.t("tour.sync.title", "Multi-Platform Sync"),
-          description: i18n.t(
-            "tour.sync.desc",
-            "Choose WebDAV, S3, or LAN sync to keep your library in sync across devices. Supports QR code pairing for quick setup.",
-          ),
-          side: "left",
           align: "start",
         },
       },

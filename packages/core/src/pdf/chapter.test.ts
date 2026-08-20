@@ -132,7 +132,7 @@ describe("PDF chapter fallback", () => {
   });
 
   it("lists PDF pages and reads page text with page references", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-pdf-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-pdf-"));
     const dataDir = await createPlatform(root);
     await writeFile(
       join(dataDir, "books", "sample.pdf"),
@@ -159,7 +159,7 @@ describe("PDF chapter fallback", () => {
   });
 
   it("returns null for invalid page chapter ids", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-pdf-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-pdf-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "sample.pdf"), buildSimplePdf(["Only page"]));
 

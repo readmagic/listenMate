@@ -1,4 +1,4 @@
-import i18n from "@readany/core/i18n";
+import i18n from "@listenmate/core/i18n";
 /**
  * stats-utils.ts — Pure formatters, date helpers, and metric builders for the Stats page.
  * No React, no side-effects — only deterministic functions.
@@ -10,8 +10,8 @@ import {
   type StatsInsight,
   type StatsReport,
   fromLocalDateKey,
-} from "@readany/core/stats";
-import { cn } from "@readany/core/utils";
+} from "@listenmate/core/stats";
+import { cn } from "@listenmate/core/utils";
 import type { ReactNode } from "react";
 import type { StatsCopy } from "./stats-copy";
 

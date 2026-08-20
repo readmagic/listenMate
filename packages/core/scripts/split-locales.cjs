@@ -18,7 +18,7 @@ const MODULE_MAP = {
   "translation.json": ["translation"],
   "tts.json": ["tts", "fonts"],
   "stats.json": ["stats"],
-  "onboarding.json": ["onboarding", "tour", "readerTour", "commandPalette", "updater"],
+  "onboarding.json": ["onboarding", "tour", "readerTour", "commandPalette"],
   "profile.json": ["profile", "skills", "about", "feedback"],
   "misc.json": ["vectorize"],
 };

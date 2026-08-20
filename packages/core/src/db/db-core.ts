@@ -14,8 +14,8 @@ let localDbInitialized = false;
 let localDbInitPromise: Promise<void> | null = null;
 let localDbLoadPromise: Promise<IDatabase> | null = null;
 
-const DB_FILENAME = "readany.db";
-const LOCAL_DB_FILENAME = "readany_local.db";
+const DB_FILENAME = "listenmate.db";
+const LOCAL_DB_FILENAME = "listenmate_local.db";
 const DEVICE_ID_STORAGE_KEY = "sync_device_id";
 const DESKTOP_DATA_ROOT_CONFIG_FILE = "desktop-data-root.json";
 
@@ -142,7 +142,7 @@ export async function getDB(): Promise<IDatabase> {
   return dbLoadPromise;
 }
 
-/** Get or lazily open the local database (readany_local.db) */
+/** Get or lazily open the local database (listenmate_local.db) */
 export async function getLocalDB(): Promise<IDatabase> {
   if (localDb) return localDb;
 

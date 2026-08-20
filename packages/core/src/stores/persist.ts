@@ -6,7 +6,7 @@ import type { StateCreator, StoreApi } from "zustand";
 import { getPlatformService, waitForPlatformService } from "../services/platform";
 
 const DEBOUNCE_MS = 500;
-const STORE_DIR = "readany-store";
+const STORE_DIR = "listenmate-store";
 const pendingWrites = new Map<string, ReturnType<typeof setTimeout>>();
 const writePromises = new Map<string, Promise<void>>();
 const pendingData = new Map<string, unknown>();

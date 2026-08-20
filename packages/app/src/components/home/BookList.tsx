@@ -3,9 +3,8 @@ import { useResolvedSrc } from "@/hooks/use-resolved-src";
  * BookList — list view for books
  */
 import { openDesktopBook } from "@/lib/library/open-book";
-import type { Book } from "@readany/core/types";
-import { getBookProgressPercent } from "@readany/core/utils";
-import { Loader2 } from "lucide-react";
+import type { Book } from "@listenmate/core/types";
+import { getBookProgressPercent } from "@listenmate/core/utils";
 import { useTranslation } from "react-i18next";
 
 interface BookListProps {
@@ -21,8 +20,6 @@ function BookListItem({ book, onOpen }: BookListItemProps) {
   const { t } = useTranslation();
   const coverSrc = useResolvedSrc(book.meta.coverUrl);
   const pct = getBookProgressPercent(book.progress);
-  const isRemote = book.syncStatus === "remote";
-  const isDownloading = book.syncStatus === "downloading";
 
   return (
     <div
@@ -45,16 +42,7 @@ function BookListItem({ book, onOpen }: BookListItemProps) {
         )}
       </div>
       <div>
-        {isDownloading ? (
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-            <Loader2 className="h-3 w-3 animate-spin" />
-            {t("home.downloading", "下载中")}
-          </span>
-        ) : isRemote ? (
-          <span className="rounded-full bg-sky-500/12 px-2 py-0.5 text-[10px] font-medium text-sky-700">
-            {t("home.remote", "需下载")}
-          </span>
-        ) : pct === 0 ? (
+        {pct === 0 ? (
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
             {t("home.new")}
           </span>

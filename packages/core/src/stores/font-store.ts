@@ -5,10 +5,10 @@ import { getPlatformService, waitForPlatformService } from "../services/platform
  */
 import type { CustomFont, FontFormat, FontPreset } from "../types/font";
 
-const FONTS_DIR = "readany-fonts";
+const FONTS_DIR = "listenmate-fonts";
 const FONTS_INDEX_FILE = "custom-fonts.json";
 
-// ─── Font index persistence (stored alongside font files in readany-fonts/) ───
+// ─── Font index persistence (stored alongside font files in listenmate-fonts/) ───
 
 interface FontIndex {
   fonts: CustomFont[];
@@ -87,7 +87,7 @@ function getFontExtension(fileName: string): FontFormat {
 
 function createCustomFontFamily(fontId: string): string {
   const safeId = fontId.replace(/[^a-zA-Z0-9_-]+/g, "-");
-  return `ReadAnyCustomFont-${safeId}`;
+  return `ListenMateCustomFont-${safeId}`;
 }
 
 function getFontFormat(fileName: string): FontFormat {
@@ -273,11 +273,11 @@ export const useFontStore = create<FontState>((set, get) => ({
 }));
 
 async function loadFontIndexLegacy(): Promise<CustomFont[] | null> {
-  // One-time migration: old versions stored custom-fonts.json in readany-store/
+  // One-time migration: old versions stored custom-fonts.json in listenmate-store/
   try {
     const platform = getPlatformService();
     const appData = await platform.getAppDataDir();
-    const legacyPath = await platform.joinPath(appData, "readany-store", "custom-fonts.json");
+    const legacyPath = await platform.joinPath(appData, "listenmate-store", "custom-fonts.json");
     if (!(await platform.exists(legacyPath))) return null;
     const text = await platform.readTextFile(legacyPath);
     const parsed = JSON.parse(text) as { fonts?: CustomFont[] };

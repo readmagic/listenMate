@@ -1,8 +1,8 @@
 import { driver } from "driver.js";
 import "driver.js/dist/driver.css";
-import i18n from "@readany/core/i18n";
+import i18n from "@listenmate/core/i18n";
 
-const READER_TOUR_SEEN_KEY = "readany-reader-tour-seen";
+const READER_TOUR_SEEN_KEY = "listenmate-reader-tour-seen";
 
 export function hasSeenReaderTour(): boolean {
   return localStorage.getItem(READER_TOUR_SEEN_KEY) === "true";

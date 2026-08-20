@@ -1,4 +1,3 @@
-import { SyncButton } from "@/components/ui/SyncButton";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toggleWindowFullscreen } from "@/lib/window-fullscreen";
@@ -6,15 +5,13 @@ import { useAnnotationStore } from "@/stores/annotation-store";
 import { useAppStore } from "@/stores/app-store";
 import { useNotebookStore } from "@/stores/notebook-store";
 import { useReaderStore } from "@/stores/reader-store";
-import type { ChapterTranslationState } from "@readany/core/hooks";
-import { generateId } from "@readany/core/utils";
+import { generateId } from "@listenmate/core/utils";
 import {
   ArrowLeft,
   Bookmark,
   Headphones,
   List,
   Maximize,
-  MessageSquare,
   NotebookPen,
   Pin,
   RotateCcw,
@@ -26,7 +23,6 @@ import {
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { ChapterTranslationMenu } from "./ChapterTranslationBar";
 import type { TOCItem } from "./FoliateViewer";
 
 interface ReaderToolbarProps {
@@ -39,15 +35,7 @@ interface ReaderToolbarProps {
   onToggleSearch?: () => void;
   onToggleToc?: () => void;
   onToggleSettings?: () => void;
-  onToggleChat?: () => void;
   onToggleTTS?: () => void;
-  chapterTranslationState: ChapterTranslationState;
-  onChapterTranslationStart: (targetLang?: string) => void;
-  onChapterTranslationCancel: () => void;
-  onToggleOriginalVisible: () => void;
-  onToggleTranslationVisible: () => void;
-  onChapterTranslationReset: () => void;
-  isChatOpen?: boolean;
   isTTSActive?: boolean;
   isFixedLayout?: boolean;
   fixedLayoutZoom?: number;
@@ -72,15 +60,7 @@ export function ReaderToolbar({
   onToggleSearch,
   onToggleToc,
   onToggleSettings,
-  onToggleChat,
   onToggleTTS,
-  chapterTranslationState,
-  onChapterTranslationStart,
-  onChapterTranslationCancel,
-  onToggleOriginalVisible,
-  onToggleTranslationVisible,
-  onChapterTranslationReset,
-  isChatOpen,
   isTTSActive,
   isFixedLayout = false,
   fixedLayoutZoom = 1,
@@ -218,17 +198,8 @@ export function ReaderToolbar({
         </span>
       </div>
 
-      {/* Right: translate + TTS + search + AI chat + settings */}
+      {/* Right: TTS + search + zoom + pin + fullscreen + settings */}
       <div className="flex items-center gap-0.5">
-        <ChapterTranslationMenu
-          state={chapterTranslationState}
-          onStart={onChapterTranslationStart}
-          onCancel={onChapterTranslationCancel}
-          onToggleOriginalVisible={onToggleOriginalVisible}
-          onToggleTranslationVisible={onToggleTranslationVisible}
-          onReset={onChapterTranslationReset}
-        />
-        <SyncButton iconSize={14} className="h-7 w-7" />
         {isFixedLayout && (
           <div
             className="mx-0.5 flex h-7 items-center gap-0.5 rounded-sm border border-border/50 bg-muted/40 px-0.5"
@@ -298,15 +269,6 @@ export function ReaderToolbar({
           title={isPinned ? t("reader.unpinToolbar") : t("reader.pinToolbar")}
         >
           <Pin className="h-3.5 w-3.5" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={`h-7 w-7 ${isChatOpen ? "bg-primary/10 text-primary" : ""}`}
-          onClick={onToggleChat}
-          title={t("reader.askAI")}
-        >
-          <MessageSquare className="h-3.5 w-3.5" />
         </Button>
         <Button
           variant="ghost"

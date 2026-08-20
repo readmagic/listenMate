@@ -7,9 +7,9 @@ import {
   generateFontId,
   saveFontFile,
   useFontStore,
-} from "@readany/core/stores";
-import type { CustomFont } from "@readany/core/types/font";
-import { PRESET_FONTS } from "@readany/core/types/font";
+} from "@listenmate/core/stores";
+import type { CustomFont } from "@listenmate/core/types/font";
+import { PRESET_FONTS } from "@listenmate/core/types/font";
 import { Download, FileText, Globe, Trash2 } from "lucide-react";
 /**
  * FontSettings — custom font management for desktop

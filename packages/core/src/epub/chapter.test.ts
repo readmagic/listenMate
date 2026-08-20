@@ -136,7 +136,7 @@ describe("readEpubChapterFromDraft", () => {
   });
 
   it("reads a chapter resource from the draft EPUB", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-chapter-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-chapter-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "sample.epub"), buildEpub());
     const book = {
@@ -166,7 +166,7 @@ describe("readEpubChapterFromDraft", () => {
   });
 
   it("can read raw XHTML for controlled draft editing", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-chapter-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-chapter-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "sample.epub"), buildEpub());
     const book = {
@@ -193,7 +193,7 @@ describe("readEpubChapterFromDraft", () => {
   });
 
   it("patches a chapter resource in the draft without changing the source EPUB", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-chapter-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-chapter-"));
     const dataDir = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "sample.epub");
     const sourceBytes = buildEpub();
@@ -268,7 +268,7 @@ describe("readEpubChapterFromDraft", () => {
   });
 
   it("reads and patches a chapter whose manifest href is percent-encoded", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-chapter-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-chapter-"));
     const dataDir = await createPlatform(root);
     await writeFile(join(dataDir, "books", "encoded.epub"), buildEpubWithEncodedChapterHref());
     const book = {

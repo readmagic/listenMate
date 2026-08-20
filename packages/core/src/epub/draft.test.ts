@@ -131,7 +131,7 @@ describe("createEpubDraft", () => {
   });
 
   it("copies the source EPUB into a draft workspace without modifying the source", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-draft-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-draft-"));
     const { dataDir, events } = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "sample.epub");
     const sourceBytes = buildMinimalEpub();
@@ -184,7 +184,7 @@ describe("createEpubDraft", () => {
   });
 
   it("reads draft operation history", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-draft-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-draft-"));
     const { dataDir } = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "sample.epub");
     await writeFile(sourcePath, buildMinimalEpub());
@@ -214,7 +214,7 @@ describe("createEpubDraft", () => {
   });
 
   it("discards a draft and records the operation", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-draft-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-draft-"));
     const { dataDir } = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "sample.epub");
     await writeFile(sourcePath, buildMinimalEpub());
@@ -260,7 +260,7 @@ describe("createEpubDraft", () => {
   });
 
   it("undoes a draft patch operation without modifying the source EPUB", async () => {
-    const root = await mkdtemp(join(tmpdir(), "readany-core-draft-undo-"));
+    const root = await mkdtemp(join(tmpdir(), "listenmate-core-draft-undo-"));
     const { dataDir } = await createPlatform(root);
     const sourcePath = join(dataDir, "books", "sample.epub");
     const sourceBytes = buildMinimalEpub();

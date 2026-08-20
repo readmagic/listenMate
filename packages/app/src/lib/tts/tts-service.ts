@@ -1,11 +1,11 @@
 /**
  * TTS Service — Thin adapter layer.
- * All core TTS logic lives in @readany/core/tts.
+ * All core TTS logic lives in @listenmate/core/tts.
  * This file re-exports everything for backward compatibility.
  */
 
 // Re-export all types, constants, and players from core
-export type { TTSEngine, TTSConfig, ITTSPlayer } from "@readany/core/tts";
+export type { TTSEngine, TTSConfig, ITTSPlayer } from "@listenmate/core/tts";
 export {
   DEFAULT_TTS_CONFIG,
   TTS_PROVIDER_DEFINITIONS,
@@ -18,8 +18,8 @@ export {
   OpenAICompatibleTTSPlayer,
   XiaomiTTSPlayer,
   EDGE_TTS_VOICES,
-} from "@readany/core/tts";
-export type { EdgeTTSVoice } from "@readany/core/tts";
+} from "@listenmate/core/tts";
+export type { EdgeTTSVoice } from "@listenmate/core/tts";
 
 // Singleton instances (kept at app level for lifecycle management)
 import {
@@ -28,7 +28,7 @@ import {
   EdgeTTSPlayer,
   OpenAICompatibleTTSPlayer,
   XiaomiTTSPlayer,
-} from "@readany/core/tts";
+} from "@listenmate/core/tts";
 
 export const systemTTS = new BrowserTTSPlayer();
 export const browserTTS = systemTTS;

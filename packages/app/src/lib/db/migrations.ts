@@ -47,7 +47,7 @@ const migrations: Migration[] = [
 /** Run pending migrations */
 export async function runMigrations(): Promise<void> {
   const Database = (await import("@tauri-apps/plugin-sql")).default;
-  const db = await Database.load(`sqlite:${await getDesktopDatabasePath("readany.db")}`);
+  const db = await Database.load(`sqlite:${await getDesktopDatabasePath("listenmate.db")}`);
 
   // Create migrations table if not exists
   await db.execute(`
@@ -84,7 +84,7 @@ export async function runMigrations(): Promise<void> {
 export async function getSchemaVersion(): Promise<number> {
   try {
     const Database = (await import("@tauri-apps/plugin-sql")).default;
-    const db = await Database.load(`sqlite:${await getDesktopDatabasePath("readany.db")}`);
+    const db = await Database.load(`sqlite:${await getDesktopDatabasePath("listenmate.db")}`);
     const rows = await db.select<Array<{ max_version: number | null }>>(
       "SELECT MAX(version) as max_version FROM schema_migrations",
     );

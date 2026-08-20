@@ -1,5 +1,5 @@
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { cn } from "@readany/core/utils";
+import { cn } from "@listenmate/core/utils";
 import { Check, ChevronDown, ChevronUp } from "lucide-react";
 import type { ComponentPropsWithoutRef } from "react";
 

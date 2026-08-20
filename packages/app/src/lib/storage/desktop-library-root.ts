@@ -1,9 +1,8 @@
-import { closeDB, getBooks, getDatabaseFilePath, initDatabase } from "@readany/core/db";
-import { invoke } from "@tauri-apps/api/core";
+import { closeDB, getBooks, getDatabaseFilePath, initDatabase } from "@listenmate/core/db";
 
-const STORAGE_KEY = "readany-desktop-library-root";
+const STORAGE_KEY = "listenmate-desktop-library-root";
 const CONFIG_FILE = "desktop-data-root.json";
-const DATA_DB_FILES = ["readany.db", "readany_local.db", "vectors.db"];
+const DATA_DB_FILES = ["listenmate.db", "listenmate_local.db", "vectors.db"];
 const SQLITE_SIDECAR_SUFFIXES = ["", "-wal", "-shm", "-journal"];
 
 function normalizeDir(path: string): string {
@@ -96,7 +95,7 @@ async function persistDesktopLibraryRootConfig(path: string | null): Promise<voi
   await writeTextFile(configPath, JSON.stringify({ dataRoot: normalized }, null, 2));
 }
 
-const FONTS_DIR = "readany-fonts";
+const FONTS_DIR = "listenmate-fonts";
 
 async function collectManagedRelativePaths(): Promise<string[]> {
   await initDatabase();
@@ -122,9 +121,7 @@ async function collectDirRelativePaths(root: string, subDir: string): Promise<st
   const dir = await join(root, subDir);
   if (!(await exists(dir))) return [];
   const entries = await readDir(dir);
-  return entries
-    .filter((e) => e.isFile)
-    .map((e) => `${subDir}/${e.name}`);
+  return entries.filter((e) => e.isFile).map((e) => `${subDir}/${e.name}`);
 }
 
 async function ensureTargetDirs(root: string): Promise<void> {
@@ -209,11 +206,6 @@ export async function migrateDesktopLibraryRoot(nextRoot: string): Promise<Migra
   const allRelativePaths = Array.from(new Set([...relativePaths, ...fontPaths]));
 
   await closeDB();
-  try {
-    await invoke("vector_shutdown");
-  } catch (err) {
-    console.warn("[Storage] Vector shutdown failed during library root migration:", err);
-  }
 
   await ensureTargetDirs(targetRoot);
 
@@ -255,10 +247,10 @@ export async function migrateDesktopLibraryRoot(nextRoot: string): Promise<Migra
   await setDesktopLibraryRoot(targetRoot);
 
   // Update font store: rewrite filePath entries to point to new location
-  // custom-fonts.json lives inside readany-fonts/ so it was already migrated above;
+  // custom-fonts.json lives inside listenmate-fonts/ so it was already migrated above;
   // we just need to update in-memory state and write the updated index to the new path.
   try {
-    const { useFontStore } = await import("@readany/core/stores");
+    const { useFontStore } = await import("@listenmate/core/stores");
     const { join } = await import("@tauri-apps/api/path");
     const { fonts, selectedFontId } = useFontStore.getState();
     const updatedFonts = await Promise.all(
@@ -270,7 +262,10 @@ export async function migrateDesktopLibraryRoot(nextRoot: string): Promise<Migra
     useFontStore.setState({ fonts: updatedFonts });
     const { writeFile } = await import("@tauri-apps/plugin-fs");
     const indexPath = await join(targetRoot, FONTS_DIR, "custom-fonts.json");
-    await writeFile(indexPath, new TextEncoder().encode(JSON.stringify({ fonts: updatedFonts, selectedFontId }, null, 2)));
+    await writeFile(
+      indexPath,
+      new TextEncoder().encode(JSON.stringify({ fonts: updatedFonts, selectedFontId }, null, 2)),
+    );
   } catch (err) {
     console.warn("[Storage] Failed to update font paths after migration:", err);
   }

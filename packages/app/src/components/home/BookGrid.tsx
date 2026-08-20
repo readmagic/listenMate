@@ -1,7 +1,7 @@
 /**
  * BookGrid — responsive grid layout with Readest-style spacing
  */
-import type { Book } from "@readany/core/types";
+import type { Book } from "@listenmate/core/types";
 import { BookCard } from "./BookCard";
 
 interface BookGridProps {

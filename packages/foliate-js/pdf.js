@@ -271,9 +271,9 @@ const render = async (page, doc, zoom) => {
       });
     }
 
-    doc.__readanyPdfTextSelectionAbortController?.abort();
+    doc.__listenmatePdfTextSelectionAbortController?.abort();
     const selectionAbortController = new AbortController();
-    doc.__readanyPdfTextSelectionAbortController = selectionAbortController;
+    doc.__listenmatePdfTextSelectionAbortController = selectionAbortController;
     const { signal } = selectionAbortController;
     const SelectionRange = doc.defaultView.Range;
     const endOfContent = doc.createElement("div");
@@ -504,7 +504,7 @@ html, body {
   background: #fff;
 }
 #canvas, #canvas canvas { display: block; }
-#canvas canvas { filter: var(--readany-pdf-filter, none); }
+#canvas canvas { filter: var(--listenmate-pdf-filter, none); }
 ${TEXT_LAYER_CSS}
 ${ANNOTATION_LAYER_CSS}
 </style>

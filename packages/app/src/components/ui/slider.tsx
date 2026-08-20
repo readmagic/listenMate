@@ -1,5 +1,5 @@
 import * as SliderPrimitive from "@radix-ui/react-slider";
-import { cn } from "@readany/core/utils";
+import { cn } from "@listenmate/core/utils";
 import type { ComponentPropsWithoutRef } from "react";
 
 function Slider({ className, ...props }: ComponentPropsWithoutRef<typeof SliderPrimitive.Root>) {

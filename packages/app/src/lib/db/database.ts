@@ -1,5 +1,5 @@
 /**
- * Proxy re-export — actual implementation lives in @readany/core/db
+ * Proxy re-export — actual implementation lives in @listenmate/core/db
  * This file maintains backward compatibility for app-level imports.
  */
 export {
@@ -31,26 +31,10 @@ export {
   getBookmarks,
   insertBookmark,
   deleteBookmark,
-  getThreads,
-  getThread,
-  insertThread,
-  updateThreadTitle,
-  deleteThread,
-  deleteThreadsByBookId,
-  getMessages,
-  insertMessage,
   getReadingSessions,
   getReadingSessionsByDateRange,
   insertReadingSession,
   updateReadingSession,
-  getChunks,
-  insertChunks,
-  deleteChunks,
-  getSkills,
-  insertSkill,
-  upsertSkill,
-  updateSkill,
-  deleteSkill,
-} from "@readany/core/db/database";
+} from "@listenmate/core/db/database";
 
-export type { HighlightWithBook } from "@readany/core/db/database";
+export type { HighlightWithBook } from "@listenmate/core/db/database";

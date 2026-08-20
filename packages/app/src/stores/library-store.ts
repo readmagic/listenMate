@@ -1,5 +1,4 @@
 import * as db from "@/lib/db/database";
-import { triggerVectorizeBook } from "@/lib/rag/vectorize-trigger";
 import {
   getDesktopLibraryRoot,
   isDesktopManagedRelativePath,
@@ -10,11 +9,32 @@ import {
   createEmptyImportBooksResult,
   createImportDuplicateIndex,
   findDuplicateBookByHash,
-} from "@readany/core";
-import { debouncedSave, loadFromFS } from "@readany/core/stores/persist";
-import { useVectorModelStore } from "@readany/core/stores/vector-model-store";
-import type { Book, BookGroup, LibraryFilter, SortField, SortOrder } from "@readany/core/types";
+} from "@listenmate/core";
+import { debouncedSave, loadFromFS } from "@listenmate/core/stores/persist";
+import type { Book, BookGroup, LibraryFilter, SortField, SortOrder } from "@listenmate/core/types";
 import { create } from "zustand";
+
+/**
+ * Compute SHA-256 hash of a file using the webview's SubtleCrypto.
+ * Reads the file in 1MB chunks to avoid loading large books into memory at once.
+ */
+async function computeFileHash(filePath: string): Promise<string | undefined> {
+  try {
+    const resolvedPath = await resolveDesktopDataPath(filePath);
+    const { exists, readFile } = await import("@tauri-apps/plugin-fs");
+    if (!(await exists(resolvedPath))) return undefined;
+
+    // Read the entire file as Uint8Array. For books (typically < 100MB) this is acceptable.
+    const bytes = await readFile(resolvedPath);
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    return Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  } catch (err) {
+    console.warn("[Library] File hash calculation failed:", err);
+    return undefined;
+  }
+}
 
 interface EpubMeta {
   title: string;
@@ -411,8 +431,7 @@ async function restoreDeletedDesktopBook(bookId: string, filePath: string): Prom
   let fileHash: string | undefined;
 
   try {
-    const { invoke } = await import("@tauri-apps/api/core");
-    fileHash = await invoke<string>("sync_hash_file", { path: filePath });
+    fileHash = await computeFileHash(filePath);
   } catch (err) {
     console.warn("[Library] File hash calculation failed:", err);
   }
@@ -420,7 +439,7 @@ async function restoreDeletedDesktopBook(bookId: string, filePath: string): Prom
   const { relativePath, destPath } =
     ext === "txt"
       ? await (async () => {
-          const { TxtToEpubConverter } = await import("@readany/core/utils/txt-to-epub");
+          const { TxtToEpubConverter } = await import("@listenmate/core/utils/txt-to-epub");
           const { readFile, writeFile, mkdir } = await import("@tauri-apps/plugin-fs");
           const { join } = await import("@tauri-apps/api/path");
           const rawBytes = await readFile(filePath);
@@ -445,7 +464,7 @@ async function restoreDeletedDesktopBook(bookId: string, filePath: string): Prom
         ? await (async () => {
             const [{ UmdToEpubConverter }, fflate, { readFile, writeFile, mkdir }, { join }] =
               await Promise.all([
-                import("@readany/core/utils/umd-to-epub"),
+                import("@listenmate/core/utils/umd-to-epub"),
                 import("foliate-js/vendor/fflate.js"),
                 import("@tauri-apps/plugin-fs"),
                 import("@tauri-apps/api/path"),
@@ -590,15 +609,14 @@ async function inspectDeletedDesktopBookCandidate(
   let fileHash: string | undefined;
 
   try {
-    const { invoke } = await import("@tauri-apps/api/core");
-    fileHash = await invoke<string>("sync_hash_file", { path: filePath });
+    fileHash = await computeFileHash(filePath);
   } catch (err) {
     console.warn("[Library] File hash calculation failed:", err);
   }
 
   if (ext === "txt") {
     try {
-      const { TxtToEpubConverter } = await import("@readany/core/utils/txt-to-epub");
+      const { TxtToEpubConverter } = await import("@listenmate/core/utils/txt-to-epub");
       const { readFile } = await import("@tauri-apps/plugin-fs");
       const rawBytes = await readFile(filePath);
       const txtFile = new File(
@@ -617,7 +635,7 @@ async function inspectDeletedDesktopBookCandidate(
   if (ext === "umd") {
     try {
       const [{ UmdToEpubConverter }, fflate, { readFile }] = await Promise.all([
-        import("@readany/core/utils/umd-to-epub"),
+        import("@listenmate/core/utils/umd-to-epub"),
         import("foliate-js/vendor/fflate.js"),
         import("@tauri-apps/plugin-fs"),
       ]);
@@ -896,8 +914,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
           let fileHash: string | undefined;
 
           try {
-            const { invoke } = await import("@tauri-apps/api/core");
-            fileHash = await invoke<string>("sync_hash_file", { path: filePath });
+            fileHash = await computeFileHash(filePath);
           } catch (err) {
             console.warn("[Library] File hash calculation failed:", err);
           }
@@ -912,17 +929,23 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
           }
 
           let deletedMatch = fileHash
-            ? await db.getDeletedBookByFileHash(fileHash).catch((err) => { console.warn("[Library] Failed to check deleted book by hash:", err); return null; })
+            ? await db.getDeletedBookByFileHash(fileHash).catch((err) => {
+                console.warn("[Library] Failed to check deleted book by hash:", err);
+                return null;
+              })
             : null;
           // Fallback: match by title if hash lookup failed (e.g. hash was null on first import)
           if (!deletedMatch && title) {
-            deletedMatch = await db.getDeletedBookByTitle(title).catch((err) => { console.warn("[Library] Failed to check deleted book by title:", err); return null; });
+            deletedMatch = await db.getDeletedBookByTitle(title).catch((err) => {
+              console.warn("[Library] Failed to check deleted book by title:", err);
+              return null;
+            });
           }
           const bookId = deletedMatch?.id ?? crypto.randomUUID();
 
           // For TXT files, convert to EPUB first before storing
           if (ext === "txt") {
-            const { TxtToEpubConverter } = await import("@readany/core/utils/txt-to-epub");
+            const { TxtToEpubConverter } = await import("@listenmate/core/utils/txt-to-epub");
             const { readFile } = await import("@tauri-apps/plugin-fs");
             const rawBytes = await readFile(filePath);
             const txtFile = new File(
@@ -948,7 +971,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
           // For UMD files, parse and convert to EPUB before storing
           if (ext === "umd") {
             const [{ UmdToEpubConverter }, fflate, { readFile }] = await Promise.all([
-              import("@readany/core/utils/umd-to-epub"),
+              import("@listenmate/core/utils/umd-to-epub"),
               import("foliate-js/vendor/fflate.js"),
               import("@tauri-apps/plugin-fs"),
             ]);
@@ -1108,24 +1131,6 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
           result.imported.push(book);
           if (fileHash) {
             duplicateIndex.byHash.set(fileHash, book);
-          }
-
-          // Auto-vectorize if enabled
-          const vmState = useVectorModelStore.getState();
-          if (
-            vmState.autoVectorizeOnImport &&
-            vmState.vectorModelEnabled &&
-            vmState.hasVectorCapability()
-          ) {
-            triggerVectorizeBook(book.id, relativePath, (progress) => {
-              // Update book's vectorizeProgress so BookCard can show it
-              const pct = progress.totalChunks > 0
-                ? progress.processedChunks / progress.totalChunks
-                : 0;
-              get().updateBook(book.id, { vectorizeProgress: pct });
-            }).catch((err) => {
-              console.warn(`[importBooks] Auto-vectorize failed for ${title}:`, err);
-            });
           }
         } catch (err) {
           console.error(`Failed to import ${filePath}:`, err);
@@ -1301,7 +1306,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     // Persist book tag changes to DB
     const books = get().books;
     for (const b of books) {
-      db.updateBook(b.id, { tags: b.tags }).catch((err) => console.warn("[Library] Failed to update book tags:", err));
+      db.updateBook(b.id, { tags: b.tags }).catch((err) =>
+        console.warn("[Library] Failed to update book tags:", err),
+      );
     }
   },
 
@@ -1321,7 +1328,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     });
     for (const b of get().books) {
       if (b.tags.includes(trimmed)) {
-        db.updateBook(b.id, { tags: b.tags }).catch((err) => console.warn("[Library] Failed to update book tags:", err));
+        db.updateBook(b.id, { tags: b.tags }).catch((err) =>
+          console.warn("[Library] Failed to update book tags:", err),
+        );
       }
     }
   },
@@ -1338,7 +1347,10 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       return { books, allTags };
     });
     const book = get().books.find((b) => b.id === bookId);
-    if (book) db.updateBook(bookId, { tags: book.tags }).catch((err) => console.warn("[Library] Failed to update book tags:", err));
+    if (book)
+      db.updateBook(bookId, { tags: book.tags }).catch((err) =>
+        console.warn("[Library] Failed to update book tags:", err),
+      );
   },
 
   removeTagFromBook: (bookId, tag) => {
@@ -1350,6 +1362,9 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       return { books };
     });
     const book = get().books.find((b) => b.id === bookId);
-    if (book) db.updateBook(bookId, { tags: book.tags }).catch((err) => console.warn("[Library] Failed to update book tags:", err));
+    if (book)
+      db.updateBook(bookId, { tags: book.tags }).catch((err) =>
+        console.warn("[Library] Failed to update book tags:", err),
+      );
   },
 }));

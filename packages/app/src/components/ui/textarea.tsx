@@ -1,4 +1,4 @@
-import { cn } from "@readany/core/utils";
+import { cn } from "@listenmate/core/utils";
 import { type TextareaHTMLAttributes, forwardRef } from "react";
 
 export const Textarea = forwardRef<

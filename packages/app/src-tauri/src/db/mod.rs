@@ -9,7 +9,7 @@ pub fn init_database_sync(app: &AppHandle) -> Result<()> {
     let app_dir = storage::resolve_data_root(app).expect("failed to resolve data root");
     std::fs::create_dir_all(&app_dir)?;
 
-    let db_path = app_dir.join("readany.db");
+    let db_path = app_dir.join("listenmate.db");
     schema::initialize(&db_path)?;
 
     Ok(())

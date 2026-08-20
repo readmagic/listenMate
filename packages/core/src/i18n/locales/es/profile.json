@@ -14,7 +14,7 @@
     "avgDaily": "Promedio diario",
     "readingActivity": "Actividad de lectura",
     "viewDetails": "Ver detalles",
-    "version": "ReadAny Mobile v{{version}}",
+    "version": "ListenMate Mobile v{{version}}",
     "storage": "Almacenamiento",
     "clearCache": "Limpiar caché",
     "clearingCache": "Limpiando...",
@@ -51,7 +51,6 @@
     "ebookRenderer": "Motor de eBooks",
     "localDatabase": "Base de datos local",
     "feedback": "Comentarios",
-    "supportCenter": "Centro de soporte",
     "madeBy": "Hecho con ❤️ por NicePkg"
   },
   "feedback": {

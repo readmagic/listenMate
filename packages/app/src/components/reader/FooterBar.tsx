@@ -8,7 +8,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DASHSCOPE_VOICES, EDGE_TTS_VOICES, getSystemVoices } from "@/lib/tts/tts-service";
 import {
   DEFAULT_SYSTEM_VOICE_VALUE,
   findSystemVoiceLabel,
@@ -16,10 +15,11 @@ import {
   groupSystemVoiceOptions,
   resolveSystemVoiceValue,
 } from "@/lib/tts/system-voices";
+import { DASHSCOPE_VOICES, EDGE_TTS_VOICES, getSystemVoices } from "@/lib/tts/tts-service";
 import type { TTSEngine } from "@/lib/tts/tts-service";
 import { useReaderStore } from "@/stores/reader-store";
 import { useTTSStore } from "@/stores/tts-store";
-import { getLocaleDisplayLabel, groupEdgeTTSVoices } from "@readany/core/tts";
+import { getLocaleDisplayLabel, groupEdgeTTSVoices } from "@listenmate/core/tts";
 import {
   ChevronDown,
   ChevronLeft,
@@ -154,7 +154,9 @@ export function FooterBar({
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground w-16 shrink-0">{t("tts.engine")}</span>
               <div className="flex gap-1">
-                {(["edge", "system", "dashscope", "xiaomi", "openai-compatible"] as TTSEngine[]).map((eng) => (
+                {(
+                  ["edge", "system", "dashscope", "xiaomi", "openai-compatible"] as TTSEngine[]
+                ).map((eng) => (
                   <Button
                     key={eng}
                     variant={config.engine === eng ? "default" : "secondary"}
@@ -228,15 +230,15 @@ export function FooterBar({
                   </SelectTrigger>
                   <SelectContent className="max-h-[220px]">
                     <SelectItem value={DEFAULT_SYSTEM_VOICE_VALUE}>
-                    {t("tts.defaultVoice")}
-                  </SelectItem>
-                  {systemVoiceGroups.map(([lang, langVoices]) => (
-                    <div key={lang}>
-                      <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      {t("tts.defaultVoice")}
+                    </SelectItem>
+                    {systemVoiceGroups.map(([lang, langVoices]) => (
+                      <div key={lang}>
+                        <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                           {getLocaleDisplayLabel(lang, displayLocale)}
-                      </div>
-                      {langVoices.map((voice) => (
-                        <SelectItem key={voice.id} value={voice.id}>
+                        </div>
+                        {langVoices.map((voice) => (
+                          <SelectItem key={voice.id} value={voice.id}>
                             {voice.label}
                           </SelectItem>
                         ))}
@@ -311,7 +313,7 @@ export function FooterBar({
                   min={0}
                   max={100}
                   value={displayPct}
-                  onChange={(e) => handleProgressSeek(parseInt(e.target.value, 10))}
+                  onChange={(e) => handleProgressSeek(Number.parseInt(e.target.value, 10))}
                   aria-label="Jump to position"
                 />
                 <div

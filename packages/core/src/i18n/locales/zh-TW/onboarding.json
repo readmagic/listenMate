@@ -4,7 +4,7 @@
     "skipForNow": "暫不設定",
     "getStarted": "開始使用",
     "welcome": {
-      "title": "歡迎來到 ReadAny",
+      "title": "歡迎來到 ListenMate",
       "desc": "你的智慧閱讀夥伴。讓我們一起來搭建最佳的閱讀環境吧。",
       "subtitle": "你的智慧閱讀夥伴。讓我們一起來搭建最佳的閱讀環境吧。",
       "ai": "AI 閱讀助手",
@@ -29,7 +29,7 @@
     },
     "appearance": {
       "title": "外觀與語言",
-      "desc": "選擇 ReadAny 的顯示語言和主題偏好。"
+      "desc": "選擇 ListenMate 的顯示語言和主題偏好。"
     },
     "ai": {
       "title": "AI 設定",
@@ -117,12 +117,5 @@
     "settings": "設定",
     "actions": "操作",
     "navigation": "導覽"
-  },
-  "updater": {
-    "newVersion": "發現新版本",
-    "isReady": "已準備好安裝",
-    "install": "下載並安裝",
-    "downloading": "下載中...",
-    "relaunch": "重新啟動以更新"
   }
 }

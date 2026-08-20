@@ -9,34 +9,7 @@
     "translationTab": "Traducción",
     "externalAi": "Acceso de IA externa",
     "tts": "TTS",
-    "about": "Acerca de",
     "other": "Más",
-    "aboutDesc": "Lee cualquier cosa, comprende más",
-    "version": "Versión",
-    "techStack": "Tecnologías",
-    "techStackTauri": "Framework de escritorio multiplataforma",
-    "techStackReact": "Librería de componentes UI",
-    "techStackTypeScript": "Seguridad de tipos",
-    "techStackFoliate": "Motor de renderizado de eBooks",
-    "feedback": "Comentarios",
-    "supportCenter": "Centro de soporte",
-    "license": "Código abierto bajo licencia GPL v3",
-    "checkUpdate": "Buscar actualizaciones",
-    "updateChecking": "Buscando...",
-    "updateAvailable": "Actualización disponible",
-    "updateDownloading": "Descargando",
-    "updateReady": "Actualización lista",
-    "updateError": "Actualización fallida",
-    "downloadUpdate": "Descargar actualización",
-    "downloading": "Descargando",
-    "updateReadyMessage": "Actualización descargada, reinicia la app para completar la instalación",
-    "updateErrorMessage": "La actualización falló, intenta de nuevo más tarde",
-    "upToDate": "Estás al día",
-    "relaunch": "Reiniciar app",
-    "dismiss": "Descartar",
-    "newVersionAvailable": "Nueva versión {{version}} disponible. ¿Descargar ahora?",
-    "later": "Después",
-    "ok": "OK",
     "skills": "Habilidades",
     "language": "Idioma",
     "general_title": "General",
@@ -52,13 +25,6 @@
     "autoSaveDesc": "Con qué frecuencia guardar el progreso de lectura",
     "languageDesc": "Elige el idioma de la interfaz",
     "appearance": "Apariencia e idioma",
-    "updaterNetworkError": "No se puede conectar al servidor de actualizaciones, verifica la red",
-    "updaterNoUpdate": "No hay actualizaciones disponibles o el servicio no está disponible temporalmente",
-    "updaterCheckFailed": "Error al buscar actualizaciones",
-    "updaterNoAvailable": "No hay actualizaciones disponibles",
-    "updaterDownloadFailed": "Error al descargar la actualización",
-    "updaterRelaunchFailed": "Error al reiniciar la app. Ábrela manualmente para terminar de instalar la actualización",
-    "relaunching": "Reiniciando...",
     "reading_title": "Lectura",
     "reading_desc": "Personaliza tu experiencia de lectura",
     "readingNotice": "Los ajustes de fuente y diseño solo aplican a EPUB y otros formatos de flujo, no a PDF.",
@@ -239,8 +205,8 @@
     "syncUsername": "Nombre de usuario",
     "syncPassword": "Contraseña",
     "syncRemoteRoot": "Carpeta remota",
-    "syncRemoteRootPlaceholder": "readany",
-    "syncRemoteRootDesc": "Elige la carpeta remota reservada para la sincronización de ReadAny. Se admiten rutas anidadas y se crearán automáticamente durante la prueba o la primera sincronización. ReadAny no escanea los libros que ya hayas colocado allí; importa una biblioteca WebDAV existente con \"Conectar otro WebDAV\".",
+    "syncRemoteRootPlaceholder": "listenmate",
+    "syncRemoteRootDesc": "Elige la carpeta remota reservada para la sincronización de ListenMate. Se admiten rutas anidadas y se crearán automáticamente durante la prueba o la primera sincronización. ListenMate no escanea los libros que ya hayas colocado allí; importa una biblioteca WebDAV existente con \"Conectar otro WebDAV\".",
     "syncTestConnection": "Probar conexión",
     "syncTesting": "Probando...",
     "syncTestSuccess": "Conexión exitosa",
@@ -316,7 +282,7 @@
     "syncS3Region": "Región",
     "syncS3Bucket": "Bucket",
     "syncS3RemoteRoot": "Carpeta de sincronización",
-    "syncS3RemoteRootDesc": "Elige el prefijo de carpeta dentro de este bucket. Se admiten rutas anidadas, por ejemplo apps/readany.",
+    "syncS3RemoteRootDesc": "Elige el prefijo de carpeta dentro de este bucket. Se admiten rutas anidadas, por ejemplo apps/listenmate.",
     "syncS3AccessKeyId": "Access Key ID",
     "syncS3SecretAccessKey": "Secret Access Key",
     "syncS3PathStyle": "Usar URL con estilo de ruta",
@@ -337,7 +303,7 @@
     },
     "syncLANQRPlaceholder": "El código QR aparecerá aquí",
     "syncLANPairCode": "Código de emparejamiento",
-    "syncLANServerHint": "Abre ReadAny en otro dispositivo y escanea este código QR o ingresa el código de emparejamiento para importar los datos de este dispositivo allí",
+    "syncLANServerHint": "Abre ListenMate en otro dispositivo y escanea este código QR o ingresa el código de emparejamiento para importar los datos de este dispositivo allí",
     "syncLANServerStart": "Iniciar servidor",
     "syncLANServerStarting": "Iniciando...",
     "syncLANServerStop": "Detener servidor",
@@ -430,17 +396,17 @@
       "overview": {
         "title": "Acceso de IA externa Beta",
         "description": "Comprueba la CLI, Skill, carpetas de descubrimiento de clientes y configuración MCP. La reparación usa el profile seleccionado.",
-        "mcpConfigHint": "MCP config significa que ReadAny aparece en archivos de configuración comunes. Reinicia o abre una nueva sesión para confirmar que las herramientas se cargaron."
+        "mcpConfigHint": "MCP config significa que ListenMate aparece en archivos de configuración comunes. Reinicia o abre una nueva sesión para confirmar que las herramientas se cargaron."
       },
       "cli": {
-        "title": "ReadAny CLI",
+        "title": "ListenMate CLI",
         "description": "La app de escritorio solo ejecuta comprobaciones CLI aprobadas, no comandos shell arbitrarios.",
         "notInstalledOrPath": "No instalado o no disponible en PATH",
         "runtimeEvidence": "Evidencia de runtime / paquete"
       },
       "agent": {
         "title": "Inicialización de agente",
-        "description": "Copia este comando a una IA externa. Instala ReadAny CLI y Skill, y devuelve un fragmento de configuración MCP.",
+        "description": "Copia este comando a una IA externa. Instala ListenMate CLI y Skill, y devuelve un fragmento de configuración MCP.",
         "clientDiscoveryStatus": "Estado de descubrimiento de clientes",
         "clientDiscoveryEmpty": "Ejecuta diagnóstico para mostrar el estado de descubrimiento de Skill.",
         "mcpConfigStatus": "Estado de configuración MCP",
@@ -480,13 +446,13 @@
         "success": "Comando completado correctamente.",
         "exitStatus": "El comando salió con código {{status}}",
         "accessUninstalled": "Se quitó el acceso de IA externa.",
-        "cliUninstalled": "ReadAny CLI se desinstaló."
+        "cliUninstalled": "ListenMate CLI se desinstaló."
       },
       "skillPrompt": {
-        "intro": "Instala y activa directamente la Skill de IA externa de ReadAny.",
+        "intro": "Instala y activa directamente la Skill de IA externa de ListenMate.",
         "execute": "No expliques solo los pasos ni muestres una tabla de rutas. Ejecuta directamente:",
         "mergeConfig": "Si puedes modificar la configuración del cliente de IA actual, fusiona la configuración MCP directamente; si no, dame solo el fragmento mínimo necesario.",
-        "done": "Al terminar, responde solo: ReadAny Skill instalada. Reinicia o abre una nueva sesión en el cliente de IA actual.",
+        "done": "Al terminar, responde solo: ListenMate Skill instalada. Reinicia o abre una nueva sesión en el cliente de IA actual.",
         "protectBooks": "No modifiques, exportes ni elimines el contenido de mis libros."
       },
       "status": {
@@ -514,7 +480,7 @@
         "unmanaged": "No gestionado",
         "checked": "Comprobado",
         "notFound": "No encontrado",
-        "containsReadAny": "Contiene readany",
+        "containsListenMate": "Contiene listenmate",
         "needsConfig": "Requiere config."
       },
       "actions": {
@@ -578,15 +544,15 @@
           "ok": "better-sqlite3 está disponible para comandos de biblioteca y datos MCP.",
           "fail": "better-sqlite3 no está disponible; los comandos de biblioteca y datos MCP pueden fallar."
         },
-        "readanyHome": {
-          "name": "Directorio ReadAny",
-          "ok": "El directorio ReadAny tiene permiso de escritura.",
-          "fail": "El directorio ReadAny no tiene permiso de escritura."
+        "listenmateHome": {
+          "name": "Directorio ListenMate",
+          "ok": "El directorio ListenMate tiene permiso de escritura.",
+          "fail": "El directorio ListenMate no tiene permiso de escritura."
         },
         "skill": {
           "name": "Habilidad",
-          "ok": "ReadAny Skill está instalada en {{path}}.",
-          "fail": "ReadAny Skill no está instalada en {{path}}."
+          "ok": "ListenMate Skill está instalada en {{path}}.",
+          "fail": "ListenMate Skill no está instalada en {{path}}."
         }
       }
     }

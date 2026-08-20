@@ -1,9 +1,9 @@
 import { resolveDesktopDataPath } from "@/lib/storage/desktop-library-root";
-import type { Book } from "@readany/core/types";
-import type { ExtractedBookMetadata } from "@readany/core/utils";
+import type { Book } from "@listenmate/core/types";
+import type { ExtractedBookMetadata } from "@listenmate/core/utils";
 
 export async function extractLocalBookMetadata(book: Book): Promise<ExtractedBookMetadata | null> {
-  if (book.syncStatus === "remote" || book.format !== "epub" || !book.filePath) return null;
+  if (book.format !== "epub" || !book.filePath) return null;
 
   try {
     const filePath = await resolveDesktopDataPath(book.filePath);

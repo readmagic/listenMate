@@ -6,6 +6,5 @@ export type {
   FileTransferOptions,
   FilePickerOptions,
   WebSocketOptions,
-  UpdateInfo,
 } from "./platform";
 export { setPlatformService, getPlatformService, waitForPlatformService } from "./platform";

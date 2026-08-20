@@ -14,7 +14,7 @@
     "avgDaily": "Daily Avg",
     "readingActivity": "Reading Activity",
     "viewDetails": "View Details",
-    "version": "ReadAny Mobile v{{version}}",
+    "version": "ListenMate Mobile v{{version}}",
     "storage": "Storage",
     "clearCache": "Clear Cache",
     "clearingCache": "Clearing...",
@@ -51,7 +51,6 @@
     "ebookRenderer": "eBook Renderer",
     "localDatabase": "Local Database",
     "feedback": "Feedback",
-    "supportCenter": "Support Center",
     "madeBy": "Made with ❤️ by NicePkg"
   },
   "feedback": {

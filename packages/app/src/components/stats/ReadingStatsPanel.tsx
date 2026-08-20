@@ -27,10 +27,10 @@ import {
   getWeekStartDate,
   isStatsRelevantBookUpdate,
   readingReportsService,
-} from "@readany/core/stats";
-import { useGoalsStore } from "@readany/core/stores";
-import { cn } from "@readany/core/utils";
-import { eventBus } from "@readany/core/utils/event-bus";
+} from "@listenmate/core/stats";
+import { useGoalsStore } from "@listenmate/core/stores";
+import { cn } from "@listenmate/core/utils";
+import { eventBus } from "@listenmate/core/utils/event-bus";
 import {
   BookOpenText,
   CalendarDays,
@@ -279,7 +279,7 @@ export function ReadingStatsPanel() {
   const goals = useGoalsStore((s) => s.goals);
   const removeGoal = useGoalsStore((s) => s.removeGoal);
   const addGoalAction = useGoalsStore((s) => s.addGoal);
-  const [allFacts, setAllFacts] = useState<import("@readany/core/stats").DailyReadingFact[]>([]);
+  const [allFacts, setAllFacts] = useState<import("@listenmate/core/stats").DailyReadingFact[]>([]);
 
   useEffect(() => {
     if (report) {

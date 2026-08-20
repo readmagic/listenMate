@@ -1,3 +1,4 @@
+import { TTSSleepTimerPanel } from "@/components/tts/TTSSleepTimerPanel";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import {
@@ -8,7 +9,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { DASHSCOPE_VOICES, getSystemVoices } from "@/lib/tts/tts-service";
 import {
   DEFAULT_SYSTEM_VOICE_VALUE,
   findSystemVoiceLabel,
@@ -16,11 +16,11 @@ import {
   groupSystemVoiceOptions,
   resolveSystemVoiceValue,
 } from "@/lib/tts/system-voices";
+import { DASHSCOPE_VOICES, getSystemVoices } from "@/lib/tts/tts-service";
 import type { TTSEngine } from "@/lib/tts/tts-service";
 import { useTTSStore } from "@/stores/tts-store";
-import { TTSSleepTimerPanel } from "@/components/tts/TTSSleepTimerPanel";
-import { getLocaleDisplayLabel } from "@readany/core/tts";
-import { cn } from "@readany/core/utils";
+import { getLocaleDisplayLabel } from "@listenmate/core/tts";
+import { cn } from "@listenmate/core/utils";
 import { ChevronDown, ChevronUp, Headphones, Minus, Pause, Play, Plus, Square } from "lucide-react";
 /**
  * TTSControls — Floating TTS playback control bar.
@@ -91,23 +91,25 @@ export function TTSControls({ onClose, className }: TTSControlsProps) {
             <div className="flex items-center gap-3">
               <span className="text-xs text-muted-foreground w-16 shrink-0">{t("tts.engine")}</span>
               <div className="flex gap-1">
-                {(["system", "dashscope", "xiaomi", "openai-compatible"] as TTSEngine[]).map((eng) => (
-                  <Button
-                    key={eng}
-                    variant={config.engine === eng ? "default" : "secondary"}
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => updateConfig({ engine: eng })}
-                  >
-                    {eng === "system"
-                      ? t("tts.systemEngine")
-                      : eng === "dashscope"
-                        ? t("tts.dashscopeEngine")
-                        : eng === "xiaomi"
-                          ? "Xiaomi"
-                          : "OpenAI"}
-                  </Button>
-                ))}
+                {(["system", "dashscope", "xiaomi", "openai-compatible"] as TTSEngine[]).map(
+                  (eng) => (
+                    <Button
+                      key={eng}
+                      variant={config.engine === eng ? "default" : "secondary"}
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => updateConfig({ engine: eng })}
+                    >
+                      {eng === "system"
+                        ? t("tts.systemEngine")
+                        : eng === "dashscope"
+                          ? t("tts.dashscopeEngine")
+                          : eng === "xiaomi"
+                            ? "Xiaomi"
+                            : "OpenAI"}
+                    </Button>
+                  ),
+                )}
               </div>
             </div>
 
@@ -135,8 +137,8 @@ export function TTSControls({ onClose, className }: TTSControlsProps) {
                   </SelectTrigger>
                   <SelectContent className="max-h-[220px]">
                     <SelectItem value={DEFAULT_SYSTEM_VOICE_VALUE}>
-                    {t("tts.defaultVoice")}
-                  </SelectItem>
+                      {t("tts.defaultVoice")}
+                    </SelectItem>
                     {systemVoiceGroups.map(([lang, langVoices]) => (
                       <div key={lang}>
                         <div className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">

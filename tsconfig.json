@@ -12,6 +12,5 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "exclude": ["node_modules", "dist", "target"],
-  "extends": "expo/tsconfig.base"
+  "exclude": ["node_modules", "dist", "target"]
 }

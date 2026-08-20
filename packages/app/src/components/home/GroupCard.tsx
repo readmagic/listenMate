@@ -1,5 +1,5 @@
 import { useResolvedSrc } from "@/hooks/use-resolved-src";
-import type { Book, BookGroup } from "@readany/core/types";
+import type { Book, BookGroup } from "@listenmate/core/types";
 import { Folder, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { memo, useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";

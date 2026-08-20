@@ -1,16 +1,9 @@
-import { triggerVectorizeBook } from "@/lib/rag/vectorize-trigger";
 import { resolveDesktopDataPath } from "@/lib/storage/desktop-library-root";
 import { useAppStore } from "@/stores/app-store";
-import { useDownloadProgressStore } from "@/stores/download-progress-store";
 import { useLibraryStore } from "@/stores/library-store";
 import { useMissingBookPromptStore } from "@/stores/missing-book-prompt-store";
-import { setBookSyncStatus } from "@readany/core/db/database";
-import { getPlatformService } from "@readany/core/services";
-import { useSyncStore } from "@readany/core/stores/sync-store";
-import { useVectorModelStore } from "@readany/core/stores/vector-model-store";
-import { downloadBookFile } from "@readany/core/sync";
-import { createSyncBackend } from "@readany/core/sync/sync-backend-factory";
-import type { Book } from "@readany/core/types";
+import { getPlatformService } from "@listenmate/core/services";
+import type { Book } from "@listenmate/core/types";
 import type { TFunction } from "i18next";
 import { toast } from "sonner";
 
@@ -56,7 +49,6 @@ function shouldConfirmReimportCandidate(
   return titleMismatch || (formatMismatch && authorMismatch);
 }
 
-const pendingDownloads = new Set<string>();
 const BOOK_IMPORT_FILTERS = [
   {
     name: "Books",
@@ -82,82 +74,8 @@ export async function openDesktopBook({
   t,
   initialCfi,
 }: OpenDesktopBookOptions): Promise<boolean> {
-  const { books, setBooks, loadBooks, inspectDeletedBookCandidate, reimportDeletedBook } =
+  const { loadBooks, inspectDeletedBookCandidate, reimportDeletedBook } =
     useLibraryStore.getState();
-
-  if (pendingDownloads.has(book.id) || book.syncStatus === "downloading") {
-    return false;
-  }
-
-  if (book.syncStatus === "remote") {
-    const syncStore = useSyncStore.getState();
-    if (!syncStore.config) {
-      toast.error(t("settings.syncNotConfigured"));
-      return false;
-    }
-
-    const platform = getPlatformService();
-    const secretKey =
-      syncStore.config.type === "webdav" ? "sync_webdav_password" : "sync_s3_secret_key";
-    const password = await platform.kvGetItem(secretKey);
-    if (!password) {
-      toast.error(t("library.passwordNotFound", "未找到同步密码，请重新配置"));
-      return false;
-    }
-
-    pendingDownloads.add(book.id);
-    setBooks(
-      books.map((item) => (item.id === book.id ? { ...item, syncStatus: "downloading" } : item)),
-    );
-    await setBookSyncStatus(book.id, "downloading");
-    const { setProgress, clearProgress } = useDownloadProgressStore.getState();
-
-    try {
-      const backend = createSyncBackend(syncStore.config, password);
-      const outcome = await downloadBookFile(backend, book.id, book.filePath, (progress) => {
-        setProgress(book.id, progress.downloaded, progress.total);
-      });
-      await loadBooks();
-
-      if (outcome === "not-found") {
-        toast.error(
-          t(
-            "library.downloadNotFound",
-            "远端没有这本书的文件，可能源设备还未上传成功。请回到那台设备重新打开/同步一次，或在此处重新导入。",
-          ),
-        );
-        return false;
-      }
-      if (outcome === "error") {
-        toast.error(t("library.downloadFailed", "下载失败，请重试"));
-        return false;
-      }
-      const vmState = useVectorModelStore.getState();
-      if (
-        vmState.autoVectorizeOnImport &&
-        vmState.vectorModelEnabled &&
-        vmState.hasVectorCapability()
-      ) {
-        triggerVectorizeBook(book.id, book.filePath, (progress) => {
-          const pct =
-            progress.totalChunks > 0 ? progress.processedChunks / progress.totalChunks : 0;
-          useLibraryStore.getState().updateBook(book.id, { vectorizeProgress: pct });
-        }).catch((err) => {
-          console.warn(`[openDesktopBook] Auto-vectorize failed for ${book.meta.title}:`, err);
-        });
-      }
-      return true;
-    } catch (error) {
-      console.error("[openDesktopBook] Failed to download remote book:", error);
-      await setBookSyncStatus(book.id, "remote");
-      await loadBooks();
-      toast.error(t("library.downloadFailed", "下载失败，请重试"));
-      return false;
-    } finally {
-      pendingDownloads.delete(book.id);
-      clearProgress(book.id);
-    }
-  }
 
   const platform = getPlatformService();
 
@@ -227,6 +145,7 @@ export async function openDesktopBook({
     return true;
   }
 
+  await loadBooks();
   openReaderTab(book, initialCfi);
   return true;
 }

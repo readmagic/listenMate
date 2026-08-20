@@ -14,7 +14,7 @@ const TTS_SKIPPED_ELEMENT_SELECTOR = [
   "rt",
   "rp",
   "sup",
-  ".readany-translation",
+  ".listenmate-translation",
   '[role="doc-noteref"]',
   '[role="doc-footnote"]',
   '[epub\\:type~="noteref"]',
