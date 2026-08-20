@@ -1036,7 +1036,6 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
                 const pdfDoc = await pdfjsLib.getDocument({
                   url: pdfUrl,
                   useWorkerFetch: false,
-                  isEvalSupported: false,
                 }).promise;
                 const metadata = await pdfDoc.getMetadata();
                 const pdfTitle = (metadata?.info as Record<string, unknown>)?.Title as string;
