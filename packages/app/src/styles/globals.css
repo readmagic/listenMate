@@ -439,7 +439,6 @@
 
   /* Invert empty state illustrations in dark mode */
   [data-theme="dark"] img[src="/book.svg"],
-  [data-theme="dark"] img[src="/think.svg"],
   [data-theme="dark"] img[src="/note.svg"],
   [data-theme="dark"] img[src^="/illustrations/"] {
     filter: invert(1);

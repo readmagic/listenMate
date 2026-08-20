@@ -9,9 +9,7 @@
     "test:core": "bun --filter @listenmate/core test",
     "tauri": "bun --filter app tauri",
     "lint": "biome check .",
-    "lint:fix": "biome check --write .",
-    "version:check": "node scripts/bump-version.js --check",
-    "version:set": "node scripts/bump-version.js"
+    "lint:fix": "biome check --write ."
   },
   "workspaces": ["packages/*"],
   "devDependencies": {
