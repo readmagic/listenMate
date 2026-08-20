@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -37,7 +38,7 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libasound2-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf libasound2-dev libssl-dev libgtk3-dev
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -66,14 +67,25 @@ jobs:
         run: node scripts/bump-version.js --check
 
       - name: Build Tauri app
+        id: tauri-build
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: "./packages/app"
-          tagName: ${{ github.ref_name }}
+          tagName: ${{ github.event_name == 'push' && github.ref_name || '' }}
           releaseName: "ListenMate ${{ github.ref_name }}"
           releaseBody: "See ASSETS to download and install this version."
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Upload Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: listenmate-${{ matrix.target }}
+          path: |
+            packages/app/src-tauri/target/${{ matrix.target }}/release/bundle/*
+            packages/app/src-tauri/target/release/bundle/*
+          if-no-files-found: warn
