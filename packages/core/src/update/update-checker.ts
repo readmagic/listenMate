@@ -5,7 +5,7 @@
 
 import type { IPlatformService } from "../services/platform";
 
-const GITHUB_API_URL = "https://api.github.com/repos/codedogQBY/ListenMate/releases/latest";
+const GITHUB_API_URL = "https://api.github.com/repos/codedogQBY/listenMate/releases/latest";
 const THROTTLE_KEY = "update_last_check_at";
 const THROTTLE_HOURS = 24;
 

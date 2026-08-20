@@ -130,7 +130,7 @@
     "ttsEngine": "TTS Engine",
     "voiceSelect": "Voice",
     "noSystemVoices": "No system voices detected",
-    "testText": "This is a test voice. ListenMate reads for you.",
+    "testText": "This is a test voice. listenMate reads for you.",
     "params": "Parameters",
     "selectVoice": "Select Voice",
     "selectEngine": "TTS Engine",

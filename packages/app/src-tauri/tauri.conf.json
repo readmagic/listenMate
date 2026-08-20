@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "ListenMate",
+  "productName": "listenMate",
   "version": "1.3.6",
   "identifier": "com.listenmate.desktop",
   "build": {
@@ -13,7 +13,7 @@
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "ListenMate",
+        "title": "listenMate",
         "width": 1280,
         "height": 800,
         "minWidth": 960,

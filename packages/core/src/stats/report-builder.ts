@@ -304,7 +304,7 @@ function createShareCard(
     accentMetric,
     secondaryMetrics,
     topBook,
-    footer: dimension === "lifetime" ? "ListenMate has been reading with you." : "Made with ListenMate",
+    footer: dimension === "lifetime" ? "listenMate has been reading with you." : "Made with listenMate",
     theme: "brand",
   };
 }
@@ -836,7 +836,7 @@ export function buildLifetimeReport(
       firstReadingDate,
       totalActiveDays,
       totalInactiveDays: Math.max(0, totalDays - totalActiveDays),
-      companionMessage: `ListenMate has been with you for ${totalDays} days.`,
+      companionMessage: `listenMate has been with you for ${totalDays} days.`,
     },
     yearlyCharts: [yearlyChart],
     yearlySnapshots,
@@ -846,7 +846,7 @@ export function buildLifetimeReport(
       {
         id: "joined",
         title: "Journey started",
-        body: `You began reading with ListenMate on ${period.startDate}.`,
+        body: `You began reading with listenMate on ${period.startDate}.`,
         tone: "celebration",
       },
     ],

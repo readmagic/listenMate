@@ -14,7 +14,7 @@
     "avgDaily": "Daily Avg",
     "readingActivity": "Reading Activity",
     "viewDetails": "View Details",
-    "version": "ListenMate Mobile v{{version}}",
+    "version": "listenMate Mobile v{{version}}",
     "storage": "Storage",
     "clearCache": "Clear Cache",
     "clearingCache": "Clearing...",

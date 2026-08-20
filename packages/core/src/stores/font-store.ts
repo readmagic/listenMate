@@ -87,7 +87,7 @@ function getFontExtension(fileName: string): FontFormat {
 
 function createCustomFontFamily(fontId: string): string {
   const safeId = fontId.replace(/[^a-zA-Z0-9_-]+/g, "-");
-  return `ListenMateCustomFont-${safeId}`;
+  return `listenMateCustomFont-${safeId}`;
 }
 
 function getFontFormat(fileName: string): FontFormat {

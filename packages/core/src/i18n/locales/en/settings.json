@@ -215,7 +215,7 @@
     "syncPassword": "Password",
     "syncRemoteRoot": "Remote Folder",
     "syncRemoteRootPlaceholder": "listenmate",
-    "syncRemoteRootDesc": "Choose the remote folder used only for ListenMate sync. Nested paths are supported and will be created automatically during test or first sync. ListenMate does not scan books you already placed there; import an existing WebDAV library with \"Connect another WebDAV\".",
+    "syncRemoteRootDesc": "Choose the remote folder used only for listenMate sync. Nested paths are supported and will be created automatically during test or first sync. listenMate does not scan books you already placed there; import an existing WebDAV library with \"Connect another WebDAV\".",
     "syncTestConnection": "Test Connection",
     "syncTesting": "Testing...",
     "syncTestSuccess": "Connection successful",
@@ -312,7 +312,7 @@
     },
     "syncLANQRPlaceholder": "QR code will appear here",
     "syncLANPairCode": "Pair Code",
-    "syncLANServerHint": "Open ListenMate on another device and scan this QR code or enter the pair code to import this device's data there",
+    "syncLANServerHint": "Open listenMate on another device and scan this QR code or enter the pair code to import this device's data there",
     "syncLANServerStart": "Start Server",
     "syncLANServerStarting": "Starting...",
     "syncLANServerStop": "Stop Server",
@@ -398,17 +398,17 @@
       "overview": {
         "title": "External AI Access Beta",
         "description": "Checks the CLI, Skill, client discovery folders, and MCP configuration. Repair uses the currently selected profile.",
-        "mcpConfigHint": "MCP config means ListenMate appears in common client config files. Restart or open a new session to confirm the tools are actually loaded."
+        "mcpConfigHint": "MCP config means listenMate appears in common client config files. Restart or open a new session to confirm the tools are actually loaded."
       },
       "cli": {
-        "title": "ListenMate CLI",
+        "title": "listenMate CLI",
         "description": "The desktop app only runs approved CLI checks, not arbitrary shell commands.",
         "notInstalledOrPath": "Not installed or unavailable in PATH",
         "runtimeEvidence": "Runtime / packaging evidence"
       },
       "agent": {
         "title": "Agent bootstrap",
-        "description": "Copy this command to an external AI. It installs the ListenMate CLI and Skill, then returns an MCP config snippet.",
+        "description": "Copy this command to an external AI. It installs the listenMate CLI and Skill, then returns an MCP config snippet.",
         "clientDiscoveryStatus": "Client discovery status",
         "clientDiscoveryEmpty": "Run diagnostics to show client Skill discovery status.",
         "mcpConfigStatus": "MCP config status",
@@ -448,13 +448,13 @@
         "success": "Command completed successfully.",
         "exitStatus": "Command exited with status {{status}}",
         "accessUninstalled": "External AI access and CLI have been uninstalled.",
-        "cliUninstalled": "ListenMate CLI has been uninstalled."
+        "cliUninstalled": "listenMate CLI has been uninstalled."
       },
       "skillPrompt": {
-        "intro": "Please directly install and enable the ListenMate external AI Skill for me.",
+        "intro": "Please directly install and enable the listenMate external AI Skill for me.",
         "execute": "Do not only explain the steps, and do not output an installation path table. Please run:",
         "mergeConfig": "If you can modify the current AI client configuration, merge the MCP config directly; otherwise give me only the shortest necessary config snippet.",
-        "done": "When finished, reply only: ListenMate Skill is installed. Please restart or open a new session in the current AI client.",
+        "done": "When finished, reply only: listenMate Skill is installed. Please restart or open a new session in the current AI client.",
         "protectBooks": "Do not modify, export, or delete my book content."
       },
       "status": {
@@ -482,7 +482,7 @@
         "unmanaged": "Unmanaged",
         "checked": "Checked",
         "notFound": "Not found",
-        "containsListenMate": "Has listenmate",
+        "containslistenMate": "Has listenmate",
         "needsConfig": "Needs config"
       },
       "actions": {
@@ -547,14 +547,14 @@
           "fail": "better-sqlite3 is unavailable; library and MCP data commands may fail."
         },
         "listenmateHome": {
-          "name": "ListenMate home",
-          "ok": "ListenMate home is writable.",
-          "fail": "ListenMate home is not writable."
+          "name": "listenMate home",
+          "ok": "listenMate home is writable.",
+          "fail": "listenMate home is not writable."
         },
         "skill": {
           "name": "Skill",
-          "ok": "ListenMate Skill is installed at {{path}}.",
-          "fail": "ListenMate Skill is not installed at {{path}}."
+          "ok": "listenMate Skill is installed at {{path}}.",
+          "fail": "listenMate Skill is not installed at {{path}}."
         }
       }
     }

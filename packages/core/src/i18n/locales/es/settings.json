@@ -206,7 +206,7 @@
     "syncPassword": "Contraseña",
     "syncRemoteRoot": "Carpeta remota",
     "syncRemoteRootPlaceholder": "listenmate",
-    "syncRemoteRootDesc": "Elige la carpeta remota reservada para la sincronización de ListenMate. Se admiten rutas anidadas y se crearán automáticamente durante la prueba o la primera sincronización. ListenMate no escanea los libros que ya hayas colocado allí; importa una biblioteca WebDAV existente con \"Conectar otro WebDAV\".",
+    "syncRemoteRootDesc": "Elige la carpeta remota reservada para la sincronización de listenMate. Se admiten rutas anidadas y se crearán automáticamente durante la prueba o la primera sincronización. listenMate no escanea los libros que ya hayas colocado allí; importa una biblioteca WebDAV existente con \"Conectar otro WebDAV\".",
     "syncTestConnection": "Probar conexión",
     "syncTesting": "Probando...",
     "syncTestSuccess": "Conexión exitosa",
@@ -303,7 +303,7 @@
     },
     "syncLANQRPlaceholder": "El código QR aparecerá aquí",
     "syncLANPairCode": "Código de emparejamiento",
-    "syncLANServerHint": "Abre ListenMate en otro dispositivo y escanea este código QR o ingresa el código de emparejamiento para importar los datos de este dispositivo allí",
+    "syncLANServerHint": "Abre listenMate en otro dispositivo y escanea este código QR o ingresa el código de emparejamiento para importar los datos de este dispositivo allí",
     "syncLANServerStart": "Iniciar servidor",
     "syncLANServerStarting": "Iniciando...",
     "syncLANServerStop": "Detener servidor",
@@ -396,17 +396,17 @@
       "overview": {
         "title": "Acceso de IA externa Beta",
         "description": "Comprueba la CLI, Skill, carpetas de descubrimiento de clientes y configuración MCP. La reparación usa el profile seleccionado.",
-        "mcpConfigHint": "MCP config significa que ListenMate aparece en archivos de configuración comunes. Reinicia o abre una nueva sesión para confirmar que las herramientas se cargaron."
+        "mcpConfigHint": "MCP config significa que listenMate aparece en archivos de configuración comunes. Reinicia o abre una nueva sesión para confirmar que las herramientas se cargaron."
       },
       "cli": {
-        "title": "ListenMate CLI",
+        "title": "listenMate CLI",
         "description": "La app de escritorio solo ejecuta comprobaciones CLI aprobadas, no comandos shell arbitrarios.",
         "notInstalledOrPath": "No instalado o no disponible en PATH",
         "runtimeEvidence": "Evidencia de runtime / paquete"
       },
       "agent": {
         "title": "Inicialización de agente",
-        "description": "Copia este comando a una IA externa. Instala ListenMate CLI y Skill, y devuelve un fragmento de configuración MCP.",
+        "description": "Copia este comando a una IA externa. Instala listenMate CLI y Skill, y devuelve un fragmento de configuración MCP.",
         "clientDiscoveryStatus": "Estado de descubrimiento de clientes",
         "clientDiscoveryEmpty": "Ejecuta diagnóstico para mostrar el estado de descubrimiento de Skill.",
         "mcpConfigStatus": "Estado de configuración MCP",
@@ -446,13 +446,13 @@
         "success": "Comando completado correctamente.",
         "exitStatus": "El comando salió con código {{status}}",
         "accessUninstalled": "Se quitó el acceso de IA externa.",
-        "cliUninstalled": "ListenMate CLI se desinstaló."
+        "cliUninstalled": "listenMate CLI se desinstaló."
       },
       "skillPrompt": {
-        "intro": "Instala y activa directamente la Skill de IA externa de ListenMate.",
+        "intro": "Instala y activa directamente la Skill de IA externa de listenMate.",
         "execute": "No expliques solo los pasos ni muestres una tabla de rutas. Ejecuta directamente:",
         "mergeConfig": "Si puedes modificar la configuración del cliente de IA actual, fusiona la configuración MCP directamente; si no, dame solo el fragmento mínimo necesario.",
-        "done": "Al terminar, responde solo: ListenMate Skill instalada. Reinicia o abre una nueva sesión en el cliente de IA actual.",
+        "done": "Al terminar, responde solo: listenMate Skill instalada. Reinicia o abre una nueva sesión en el cliente de IA actual.",
         "protectBooks": "No modifiques, exportes ni elimines el contenido de mis libros."
       },
       "status": {
@@ -480,7 +480,7 @@
         "unmanaged": "No gestionado",
         "checked": "Comprobado",
         "notFound": "No encontrado",
-        "containsListenMate": "Contiene listenmate",
+        "containslistenMate": "Contiene listenmate",
         "needsConfig": "Requiere config."
       },
       "actions": {
@@ -545,14 +545,14 @@
           "fail": "better-sqlite3 no está disponible; los comandos de biblioteca y datos MCP pueden fallar."
         },
         "listenmateHome": {
-          "name": "Directorio ListenMate",
-          "ok": "El directorio ListenMate tiene permiso de escritura.",
-          "fail": "El directorio ListenMate no tiene permiso de escritura."
+          "name": "Directorio listenMate",
+          "ok": "El directorio listenMate tiene permiso de escritura.",
+          "fail": "El directorio listenMate no tiene permiso de escritura."
         },
         "skill": {
           "name": "Habilidad",
-          "ok": "ListenMate Skill está instalada en {{path}}.",
-          "fail": "ListenMate Skill no está instalada en {{path}}."
+          "ok": "listenMate Skill está instalada en {{path}}.",
+          "fail": "listenMate Skill no está instalada en {{path}}."
         }
       }
     }
