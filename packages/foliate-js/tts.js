@@ -500,6 +500,33 @@ export class TTS {
   highlightCfi(cfi) {
     return this.#detailFromCfi(cfi, { highlight: true });
   }
+  // 用文本内容匹配 #detailList 中的句子并把游标移过去；返回当前 detail。
+  // 用于 cfi 字符串匹配失败的兜底（外部句子分割与内部边界不同时，cfi 会对不上）。
+  alignText(text) {
+    const target = text == null ? "" : String(text).replace(/\s+/g, " ").trim();
+    if (!target) return null;
+    const entry = this.#detailList.find((range) => {
+      const candidate = normalizeRangeText(range);
+      if (!candidate) return false;
+      if (candidate === target) return true;
+      // 外部合并过短句时，target 可能是多个内部句子的拼接；反之内部也可能更长。
+      // 双向 endsWith 兜住最常见的"边界不同但语义相同"的情况。
+      if (target.endsWith(candidate) || candidate.endsWith(target)) return true;
+      return false;
+    });
+    return this.#detailResultFrom(entry, { highlight: false });
+  }
+  // 用 Range 在文档中的位置把 #detailList 游标移到"刚好在 range 之后"的句子上。
+  // 用于 cfi 精确匹配和文本兜底都失败时的最终兜底：cfi 来自外部直接 DOM 切割时
+  // 不在内部 detailList 中（边界不同），但其指向的 Range 仍是文档中的真实位置，
+  // 用 Range 比较找到第一个完全在 range 之后的句子，作为下一页起点。
+  alignRange(range) {
+    if (!range) return null;
+    const entry = this.#detailList.find(
+      (detailRange) => range.compareBoundaryPoints(Range.END_TO_START, detailRange) <= 0,
+    );
+    return this.#detailResultFrom(entry, { highlight: false });
+  }
   getLastRange() {
     return this.#lastRange?.cloneRange?.() ?? null;
   }

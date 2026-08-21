@@ -23,7 +23,7 @@ import {
   OpenAICompatibleTTSPlayer,
   XiaomiTTSPlayer,
 } from "../tts/tts-players";
-import type { ITTSPlayer, TTSConfig, TTSProfile } from "../tts/types";
+import type { ITTSPlayer, TTSChunk, TTSConfig, TTSProfile, TTSSpeakInput } from "../tts/types";
 import { DEFAULT_TTS_CONFIG, normalizeTTSConfig } from "../tts/types";
 import { withPersist } from "./persist";
 
@@ -79,7 +79,7 @@ let _dashscopeTTS: ITTSPlayer | null = null;
 let _xiaomiTTS: ITTSPlayer | null = null;
 let _openAICompatibleTTS: ITTSPlayer | null = null;
 let _activeTTS: ITTSPlayer | null = null;
-let _sessionSegments: string[] = [];
+let _sessionSegments: TTSChunk[] = [];
 let _sessionCurrentIndex = 0;
 /** Generation counter — incremented on every play/jumpToChunk to invalidate stale callbacks */
 let _sessionGeneration = 0;
@@ -167,7 +167,8 @@ function syncProfileUpdatesFromLegacyFields(
   } else if (targetProvider === "openai-compatible") {
     if (updates.openaiTtsBaseUrl !== undefined) profileUpdates.baseUrl = updates.openaiTtsBaseUrl;
     if (updates.openaiTtsApiKey !== undefined) profileUpdates.apiKey = updates.openaiTtsApiKey;
-    if (updates.openaiTtsEndpoint !== undefined) profileUpdates.endpoint = updates.openaiTtsEndpoint;
+    if (updates.openaiTtsEndpoint !== undefined)
+      profileUpdates.endpoint = updates.openaiTtsEndpoint;
     if (updates.openaiTtsModel !== undefined) profileUpdates.model = updates.openaiTtsModel;
     if (updates.openaiTtsVoice !== undefined) profileUpdates.voice = updates.openaiTtsVoice;
     if (updates.openaiTtsFormat !== undefined) profileUpdates.format = updates.openaiTtsFormat;
@@ -231,7 +232,7 @@ function getPlayerForConfig(config: TTSConfig): ITTSPlayer {
 }
 
 function startPlayback(
-  segments: string[],
+  segments: TTSChunk[],
   config: TTSConfig,
   startIndex: number,
   set: (partial: Partial<TTSState>) => void,
@@ -321,7 +322,7 @@ export interface TTSState {
   sleepTimerDurationMinutes: number | null;
 
   // Actions
-  play: (text: string | string[]) => void;
+  play: (text: TTSSpeakInput) => void;
   pause: () => void;
   resume: () => void;
   stop: () => void;
@@ -355,24 +356,47 @@ export const useTTSStore = create<TTSState>()(
       sleepTimerEndsAt: null,
       sleepTimerDurationMinutes: null,
 
-      play: (text: string | string[]) => {
+      play: (text: TTSSpeakInput) => {
         clearRespeakTimer();
         const config = normalizeTTSConfig(get().config);
         _dashscopeActiveVoice = config.dashscopeVoice;
-        const segments = Array.isArray(text)
-          ? text.map((item) => item.trim()).filter(Boolean)
-          : [text.trim()].filter(Boolean);
+        // 把多种入参形态归一化为 TTSChunk[]：保留外部传入的 pauseAfterMs 元数据。
+        let segments: TTSChunk[];
+        if (typeof text === "string") {
+          segments = text.trim() ? [{ text: text.trim() }] : [];
+        } else if (Array.isArray(text)) {
+          if (text.length > 0 && typeof text[0] === "string") {
+            segments = (text as string[])
+              .map((item) => item.trim())
+              .filter(Boolean)
+              .map((item) => ({ text: item }));
+          } else {
+            segments = (text as TTSChunk[])
+              .map((chunk) => ({
+                text: chunk.text.trim(),
+                pauseAfterMs: chunk.pauseAfterMs,
+              }))
+              .filter((chunk) => chunk.text);
+          }
+        } else {
+          segments = [];
+        }
+        const fallbackText =
+          typeof text === "string"
+            ? text.trim()
+            : text
+                .map((c) => (typeof c === "string" ? c : c.text))
+                .join(" ")
+                .trim();
         const sessionSegments =
-          segments.length > 0
-            ? segments
-            : [Array.isArray(text) ? text.join(" ").trim() : text.trim()].filter(Boolean);
+          segments.length > 0 ? segments : fallbackText ? [{ text: fallbackText }] : [];
         _sessionSegments = sessionSegments;
         _sessionCurrentIndex = 0;
         _sessionGeneration += 1;
         detachAndStopAllPlayers();
         set({
           playState: "loading",
-          currentText: sessionSegments.join(" "),
+          currentText: sessionSegments.map((c) => c.text).join(" "),
           currentChunkIndex: 0,
           totalChunks: sessionSegments.length,
         });

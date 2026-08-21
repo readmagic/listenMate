@@ -204,8 +204,7 @@ export function normalizeTTSEngine(engine: LegacyTTSEngine | string | null | und
 
 export function getTTSProviderDefinition(provider: TTSProviderType): TTSProviderDefinition {
   return (
-    TTS_PROVIDER_DEFINITIONS.find((item) => item.id === provider) ??
-    TTS_PROVIDER_DEFINITIONS[0]
+    TTS_PROVIDER_DEFINITIONS.find((item) => item.id === provider) ?? TTS_PROVIDER_DEFINITIONS[0]
   );
 }
 
@@ -282,10 +281,7 @@ function normalizeProfiles(config: Partial<TTSConfig>): TTSProfile[] {
         ? { ...profile, voice: normalizeXiaomiTTSVoice(profile.voice) }
         : profile;
     const fallback = merged.get(profile.id);
-    merged.set(
-      profile.id,
-      fallback ? { ...fallback, ...normalizedProfile } : normalizedProfile,
-    );
+    merged.set(profile.id, fallback ? { ...fallback, ...normalizedProfile } : normalizedProfile);
   }
   return Array.from(merged.values()).filter((profile) => {
     if (defaultIds.has(profile.id)) return true;
@@ -349,9 +345,7 @@ export function normalizeTTSConfig(config: PersistedTTSConfig | null | undefined
     dashscopeVoice: config?.dashscopeVoice ?? DEFAULT_TTS_CONFIG.dashscopeVoice,
     xiaomiApiKey: config?.xiaomiApiKey ?? DEFAULT_TTS_CONFIG.xiaomiApiKey,
     xiaomiBaseUrl: config?.xiaomiBaseUrl ?? DEFAULT_TTS_CONFIG.xiaomiBaseUrl,
-    xiaomiVoice: normalizeXiaomiTTSVoice(
-      config?.xiaomiVoice ?? DEFAULT_TTS_CONFIG.xiaomiVoice,
-    ),
+    xiaomiVoice: normalizeXiaomiTTSVoice(config?.xiaomiVoice ?? DEFAULT_TTS_CONFIG.xiaomiVoice),
     xiaomiStylePrompt: config?.xiaomiStylePrompt ?? DEFAULT_TTS_CONFIG.xiaomiStylePrompt,
     openaiTtsBaseUrl: config?.openaiTtsBaseUrl ?? DEFAULT_TTS_CONFIG.openaiTtsBaseUrl,
     openaiTtsApiKey: config?.openaiTtsApiKey ?? DEFAULT_TTS_CONFIG.openaiTtsApiKey,
@@ -359,8 +353,7 @@ export function normalizeTTSConfig(config: PersistedTTSConfig | null | undefined
     openaiTtsModel: config?.openaiTtsModel ?? DEFAULT_TTS_CONFIG.openaiTtsModel,
     openaiTtsVoice: config?.openaiTtsVoice ?? DEFAULT_TTS_CONFIG.openaiTtsVoice,
     openaiTtsFormat: config?.openaiTtsFormat ?? DEFAULT_TTS_CONFIG.openaiTtsFormat,
-    openaiTtsStylePrompt:
-      config?.openaiTtsStylePrompt ?? DEFAULT_TTS_CONFIG.openaiTtsStylePrompt,
+    openaiTtsStylePrompt: config?.openaiTtsStylePrompt ?? DEFAULT_TTS_CONFIG.openaiTtsStylePrompt,
     profiles: normalizeProfiles(profileSource),
   };
 
@@ -392,12 +385,24 @@ export const DASHSCOPE_VOICES = [
 ] as const;
 
 /**
+ * 单个朗读片段的元数据。`pauseAfterMs` 用于在 chunk 之间插入显式静音
+ * （例如标题之后），让朗读听感上有清晰的结构停顿。
+ */
+export interface TTSChunk {
+  text: string;
+  pauseAfterMs?: number;
+}
+
+/** Player.speak 接受的入参类型：可以是纯文本、字符串数组，或带元数据的 chunk 数组。 */
+export type TTSSpeakInput = string | string[] | TTSChunk[];
+
+/**
  * ITTSPlayer — unified interface for all TTS engines.
  * Eliminates engine-specific if/else branching in store code.
  */
 export interface ITTSPlayer {
-  speak(text: string | string[], config: TTSConfig): void | Promise<void>;
-  append?(text: string | string[]): void | Promise<void>;
+  speak(text: TTSSpeakInput, config: TTSConfig): void | Promise<void>;
+  append?(text: TTSSpeakInput): void | Promise<void>;
   pause(): void;
   resume(): void;
   stop(): void;

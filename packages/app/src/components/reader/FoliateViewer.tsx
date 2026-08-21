@@ -7,7 +7,11 @@ import type { BookDoc, BookFormat } from "@/lib/reader/document-loader";
 import { getDirection, isFixedLayoutBook } from "@/lib/reader/document-loader";
 import { getFontTheme } from "@/lib/reader/font-themes";
 import { registerIframeEventHandlers } from "@/lib/reader/iframe-event-handlers";
-import { deserializePdfAnchor, pdfAnchorPage, serializePdfAnchor } from "@listenmate/core/pdf/highlight-anchor";
+import {
+  deserializePdfAnchor,
+  pdfAnchorPage,
+  serializePdfAnchor,
+} from "@listenmate/core/pdf/highlight-anchor";
 import { cleanText, isTTSFootnoteMarker, shouldSkipTTSNode } from "@listenmate/core/tts";
 import type { HighlightColor } from "@listenmate/core/types";
 import { HIGHLIGHT_COLOR_HEX } from "@listenmate/core/types";
@@ -629,6 +633,8 @@ export interface BookSelection {
 export interface TTSSegmentDetail {
   text: string;
   cfi: string;
+  /** 该片段朗读完毕后额外的停顿（毫秒）。用于标题等结构性 segment，让听感上和后续段落有清晰间隔。 */
+  pauseAfterMs?: number;
 }
 
 /** Imperative handle exposed to parent via ref */
@@ -658,6 +664,7 @@ export interface FoliateViewerHandle {
     cfi: string,
     before?: number,
     after?: number,
+    fallbackText?: string,
   ) => Promise<{ before: TTSSegmentDetail[]; after: TTSSegmentDetail[] }>;
   setTTSHighlight: (cfi: string | null, color?: string) => Promise<void>;
   /** Inject ruby (pinyin/furigana) annotations into current document */
@@ -986,8 +993,36 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
       async (alignCfi?: string | null): Promise<TTSSegmentDetail[]> => {
         const view = viewRef.current;
         const renderer = view?.renderer;
+        if (!view || !renderer) return [];
+
+        // PDF/CBZ 翻页后 relocate 事件早于 textLayer 完成 span 渲染，
+        // 此时调用会拿到 0 segments 并错误地触发 ttsStop()，表现就是"不会自动播放下一页"。
+        // 在获取 contents 之前轮询等待任意 content 的 textLayer 出现 span（最多 2s），
+        // 必须在 contents 取值之前等 —— 新页 iframe 加载完成后 doc 引用会变。
+        if (isFixedLayout) {
+          const PDF_TEXTLAYER_WAIT_MAX_ATTEMPTS = 20;
+          const PDF_TEXTLAYER_WAIT_INTERVAL_MS = 100;
+          let waitedAttempts = 0;
+          for (let attempt = 0; attempt < PDF_TEXTLAYER_WAIT_MAX_ATTEMPTS; attempt++) {
+            const previewContents = getRendererContents(view);
+            const hasTextLayerSpans = previewContents.some(
+              (content) =>
+                !!content?.doc && content.doc.querySelectorAll(".textLayer > span").length > 0,
+            );
+            if (hasTextLayerSpans) break;
+            waitedAttempts = attempt + 1;
+            await new Promise((resolve) => setTimeout(resolve, PDF_TEXTLAYER_WAIT_INTERVAL_MS));
+          }
+          if (waitedAttempts > 0) {
+            console.log("[FoliateViewer][TTS] pdf textLayer waited", {
+              attempts: waitedAttempts,
+              elapsedMs: waitedAttempts * PDF_TEXTLAYER_WAIT_INTERVAL_MS,
+            });
+          }
+        }
+
         const contents = getRendererContents(view);
-        if (!view || !renderer || !contents.length) return [];
+        if (!contents.length) return [];
         const primaryContent =
           contents.find((content) => content?.doc && content.index === renderer.primaryIndex) ??
           contents.find((content) => content?.doc) ??
@@ -1149,8 +1184,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
           const doc = current?.doc as Document | undefined;
           // FixedLayout (PDF/CBZ) 的 getContents() 不返回 index，用 pdfDocIndexRef
           // 在 onSectionLoad 时记录的 doc→index 映射补齐，避免 sectionIndex 总是 0。
-          const sectionIndex =
-            current?.index ?? (doc ? pdfDocIndexRef.current.get(doc) ?? 0 : 0);
+          const sectionIndex = current?.index ?? (doc ? (pdfDocIndexRef.current.get(doc) ?? 0) : 0);
           if (!doc) continue;
 
           let visibleBlocks = Array.from(doc.querySelectorAll(blockSelector)).filter((block) => {
@@ -1214,7 +1248,14 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             });
           }
 
+          // 标题 block 朗读完后追加的停顿（毫秒）。让标题和后续段落之间有清晰间隔。
+          const HEADING_PAUSE_MS = 400;
+          const isHeadingBlock = (el: Element | null): boolean =>
+            !!el && /^h[1-6]$/i.test(el.tagName);
+
           for (const block of visibleBlocks) {
+            const headingBlock = isHeadingBlock(block as Element | null);
+            const segmentsBeforeBlock = segments.length;
             const walker = doc.createTreeWalker(block, NodeFilter.SHOW_TEXT, {
               acceptNode: acceptTTSNode,
             });
@@ -1252,12 +1293,13 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             // 合并短 segment（如孤立标题行）到下一个，避免朗读时短句后停顿。
             // PDF textLayer 按 PDF 文本项切分 span，segmenter 常在行末换行处断句，
             // 导致标题这种短行单独成段。这里把短 segment 和下一个合并。
+            // 但 heading block 必须跳过合并，保留标题作为独立 segment 以便注入停顿。
             const MIN_SEGMENT_LEN = 30;
             const mergedRawSegments: Array<{ start: number; end: number }> = [];
             for (let i = 0; i < rawSegments.length; i++) {
               const seg = rawSegments[i];
               const len = seg.end - seg.start;
-              if (len < MIN_SEGMENT_LEN && i + 1 < rawSegments.length) {
+              if (!headingBlock && len < MIN_SEGMENT_LEN && i + 1 < rawSegments.length) {
                 mergedRawSegments.push({ start: seg.start, end: rawSegments[i + 1].end });
                 i += 1; // 跳过下一个（已合并）
               } else {
@@ -1326,6 +1368,13 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
                 // skip segment if CFI resolution fails
               }
             }
+
+            // heading block 朗读完后追加停顿，让标题和后续段落之间有清晰间隔。
+            // 注入到该 block 的最后一个 segment 上（注意要找新增范围内的最后一个，
+            // 因为后续 alignedSegments 合并阶段可能基于 identity 去重）。
+            if (headingBlock && segments.length > segmentsBeforeBlock) {
+              segments[segments.length - 1].pauseAfterMs = HEADING_PAUSE_MS;
+            }
           }
         }
 
@@ -1391,11 +1440,27 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
                 const visibleIdentities = new Set(
                   segments.map((segment) => getTTSSegmentIdentity(segment.cfi, segment.text)),
                 );
+                // 用 identity → pauseAfterMs 映射把切割阶段注入的停顿信息带过去，
+                // 避免 aligned-filtered 分支用对齐数据替换原 segments 时丢失停顿。
+                const pauseAfterByCfi = new Map<string, number | undefined>();
+                for (const segment of segments) {
+                  pauseAfterByCfi.set(
+                    getTTSSegmentIdentity(segment.cfi, segment.text),
+                    segment.pauseAfterMs,
+                  );
+                }
+                const mergePause = (
+                  arr: Array<{ text: string; cfi: string }>,
+                ): TTSSegmentDetail[] =>
+                  arr.map((item) => {
+                    const pause = pauseAfterByCfi.get(getTTSSegmentIdentity(item.cfi, item.text));
+                    return pause === undefined ? item : { ...item, pauseAfterMs: pause };
+                  });
                 const filtered = alignedSegments.filter((segment) =>
                   visibleIdentities.has(getTTSSegmentIdentity(segment.cfi, segment.text)),
                 );
                 if (filtered.length === segments.length) {
-                  returnedSegments = filtered;
+                  returnedSegments = mergePause(filtered);
                   returnSource = "aligned-filtered";
                 } else if (filtered.length > 0) {
                   returnedSegments = segments;
@@ -1460,20 +1525,100 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         cfi: string,
         before = 10,
         after = 10,
+        fallbackText?: string,
       ): Promise<{ before: TTSSegmentDetail[]; after: TTSSegmentDetail[] }> => {
+        const view = viewRef.current;
         const tts = await ensureDesktopTTS();
         if (!tts || !cfi) return { before: [], after: [] };
 
+        // 把 cfi 解析为文档中的 Range，用于 alignRange 兜底。
+        // view.resolveCFI 返回 { index, anchor }，anchor(doc) 返回 Range。
+        const resolveCfiToRange = (): Range | null => {
+          if (!view) return null;
+          try {
+            const resolved = view.resolveCFI(cfi);
+            if (!resolved) return null;
+            const contents = getRendererContents(view);
+            const targetContent =
+              resolved.index != null
+                ? contents.find((content) => content?.doc && content.index === resolved.index)
+                : contents.find((content) => content?.doc);
+            if (!targetContent?.doc) return null;
+            return resolved.anchor?.(targetContent.doc) ?? null;
+          } catch {
+            return null;
+          }
+        };
+
+        let aligned = false;
         try {
           if (typeof tts.alignCfi === "function") {
             tts.alignCfi(cfi);
+            // 验证是否真的对齐到了目标 cfi：cfi 不匹配通常意味着外部句子分割
+            //（getVisibleTTSSegments）和 foliate-js 内部 #detailList 的边界不同，
+            // 此时 #index 保持初始 -1，collectDetails 会回到文档开头，造成"重读"。
+            const currentAfterAlign =
+              typeof tts.currentDetail === "function" ? tts.currentDetail() : null;
+            aligned = !!currentAfterAlign?.cfi && currentAfterAlign.cfi === cfi;
           } else if (
             typeof (tts as { highlightCfi?: (value: string) => unknown }).highlightCfi ===
             "function"
           ) {
             (tts as { highlightCfi: (value: string) => unknown }).highlightCfi(cfi);
+            const currentAfterAlign =
+              typeof tts.currentDetail === "function" ? tts.currentDetail() : null;
+            aligned = !!currentAfterAlign?.cfi && currentAfterAlign.cfi === cfi;
           }
         } catch {
+          return { before: [], after: [] };
+        }
+
+        // cfi 精确匹配失败时用文本兜底，把游标移到语义相同的句子上。
+        // 必须用 alignText 的返回值判断是否找到：currentDetail() 在 #index = -1 时
+        // 会调用 first() 兜底返回第一句，会让校验永远为 true，无法区分真匹配和兜底，
+        // 进而导致 collectDetails 从第二句开始返回，看起来像"循环朗读"。
+        if (
+          !aligned &&
+          fallbackText &&
+          typeof (tts as { alignText?: (t: string) => unknown }).alignText === "function"
+        ) {
+          try {
+            const alignTextResult = (
+              tts as { alignText: (t: string) => { text?: string; cfi?: string } | null }
+            ).alignText(fallbackText);
+            aligned = !!alignTextResult?.text;
+          } catch {
+            // ignore — 让下面 alignRange 继续兜底
+          }
+        }
+
+        // 文本也匹配失败时，用 Range 在文档中的位置兜底：找到第一个完全在 cfi range
+        // 之后的句子作为下一页起点。外部 cfi 来自直接 DOM 切割、不在内部 detailList
+        // 时，alignRange 仍能基于 range 的物理位置找到下一句，保证连续朗读可翻页。
+        if (
+          !aligned &&
+          typeof (
+            tts as { alignRange?: (r: Range) => { text?: string; cfi?: string } | null }
+          ).alignRange === "function"
+        ) {
+          try {
+            const range = resolveCfiToRange();
+            if (range) {
+              const alignRangeResult = (
+                tts as { alignRange: (r: Range) => { text?: string; cfi?: string } | null }
+              ).alignRange(range);
+              aligned = !!alignRangeResult?.text;
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        // 既无 cfi 匹配、文本兜底，也无 Range 兜底时，#detailList 的 #index 可能停在
+        // 初始 -1，collectDetails(offset: 1) 会从文档第一句开始返回 —— 这正是"回到
+        // 开头重读"的来源。这里直接返回空，让上层降级到章节切换/停止，而不是错误地
+        // 回到开头。
+        if (!aligned) {
           return { before: [], after: [] };
         }
 
@@ -2791,13 +2936,20 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
           // (initial mount + every zoom change). We re-apply PDF highlight
           // overlays because textContainer.replaceChildren() wiped them.
           if (isFixedLayout && view.book) {
-            (view.book as { onRendered?: (doc: Document, index: number, viewport: unknown) => void }).onRendered = (_doc, index, viewport) => {
+            (
+              view.book as {
+                onRendered?: (doc: Document, index: number, viewport: unknown) => void;
+              }
+            ).onRendered = (_doc, index, viewport) => {
               console.log("[PDF onRendered] fired", { index, hasViewport: !!viewport });
               redrawPdfHighlights(lastPdfHighlightsRef.current);
             };
             console.log("[FoliateViewer] PDF onRendered hook mounted on view.book");
           } else {
-            console.warn("[FoliateViewer] PDF onRendered NOT mounted", { isFixedLayout, hasBook: !!view.book });
+            console.warn("[FoliateViewer] PDF onRendered NOT mounted", {
+              isFixedLayout,
+              hasBook: !!view.book,
+            });
           }
           // Set search indicator color (use primary theme color instead of red)
           const primaryColor =

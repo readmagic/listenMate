@@ -95,7 +95,7 @@ describe("useTTSStore — re-speak on synth change (#370)", () => {
     vi.advanceTimersByTime(250);
     expect(dashscopePlayer.speak).toHaveBeenCalledTimes(2);
     const [segments, config] = dashscopePlayer.speak.mock.calls[1];
-    expect(segments).toEqual(["s0", "s1", "s2"]);
+    expect(segments).toEqual([{ text: "s0" }, { text: "s1" }, { text: "s2" }]);
     expect((config as TTSConfig).dashscopeVoice).toBe("Ethan");
   });
 
@@ -117,7 +117,7 @@ describe("useTTSStore — re-speak on synth change (#370)", () => {
 
     expect(edgePlayer.stop).toHaveBeenCalledTimes(1);
     expect(edgePlayer.speak).toHaveBeenCalledTimes(2);
-    expect(edgePlayer.speak.mock.calls[1][0]).toEqual(["s1"]);
+    expect(edgePlayer.speak.mock.calls[1][0]).toEqual([{ text: "s1" }]);
     expect((edgePlayer.speak.mock.calls[1][1] as TTSConfig).rate).toBe(1.5);
     expect(useTTSStore.getState().playState).toBe("playing");
     expect(useTTSStore.getState().currentChunkIndex).toBe(1);

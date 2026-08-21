@@ -12,23 +12,56 @@ import {
   base64ToBytes,
   buildOpenAIChatTTSMessages,
   buildTTSHttpError,
-  buildXiaomiTTSUrl,
   buildXiaomiTTSMessages,
+  buildXiaomiTTSUrl,
   fetchOpenAITTSAudio,
   isTTSAbortError,
 } from "./cloud-tts";
 import { fetchEdgeTTSAudio } from "./edge-tts";
 import { type ChunkBoundary, resolveCurrentChunk } from "./playback-cursor";
 import { splitIntoChunks } from "./text-utils";
-import { normalizeXiaomiTTSVoice, type ITTSPlayer, type TTSConfig } from "./types";
+import {
+  type ITTSPlayer,
+  type TTSChunk,
+  type TTSConfig,
+  type TTSSpeakInput,
+  normalizeXiaomiTTSVoice,
+} from "./types";
+
+/**
+ * 把 speak() 的多种入参形态统一归一化为 `TTSChunk[]`。
+ * - 字符串走 `splitIntoChunks`（按预算切块）
+ * - 字符串数组每项变成 `{ text }`（pauseAfterMs 默认 0）
+ * - `TTSChunk[]` 原样保留并过滤空文本
+ */
+function normalizeSpeakInput(input: TTSSpeakInput): TTSChunk[] {
+  if (typeof input === "string") {
+    return splitIntoChunks(input).map((text) => ({ text }));
+  }
+  if (Array.isArray(input)) {
+    if (input.length === 0) return [];
+    const first = input[0];
+    if (typeof first === "string") {
+      return (input as string[])
+        .map((text) => text.trim())
+        .filter(Boolean)
+        .map((text) => ({ text }));
+    }
+    return (input as TTSChunk[])
+      .map((chunk) => ({ text: chunk.text.trim(), pauseAfterMs: chunk.pauseAfterMs }))
+      .filter((chunk) => chunk.text);
+  }
+  return [];
+}
 
 // ── Browser SpeechSynthesis ──
 
 export class BrowserTTSPlayer implements ITTSPlayer {
-  private chunks: string[] = [];
+  private chunks: TTSChunk[] = [];
   private currentIndex = 0;
   private _speaking = false;
   private _paused = false;
+  private pauseTimer: ReturnType<typeof setTimeout> | null = null;
 
   onStateChange?: (state: "playing" | "paused" | "stopped") => void;
   onChunkChange?: (index: number, total: number) => void;
@@ -41,13 +74,13 @@ export class BrowserTTSPlayer implements ITTSPlayer {
     return this._paused;
   }
 
-  speak(text: string | string[], config: TTSConfig) {
+  speak(text: TTSSpeakInput, config: TTSConfig) {
     if (typeof window === "undefined" || !window.speechSynthesis) {
       console.warn("[TTS] SpeechSynthesis not available on this platform");
       return;
     }
     this.stop();
-    this.chunks = Array.isArray(text) ? text.filter(Boolean) : splitIntoChunks(text);
+    this.chunks = normalizeSpeakInput(text);
     this.currentIndex = 0;
     this._speaking = true;
     this._paused = false;
@@ -70,7 +103,8 @@ export class BrowserTTSPlayer implements ITTSPlayer {
     }
 
     const synth = window.speechSynthesis;
-    const utt = new SpeechSynthesisUtterance(this.chunks[this.currentIndex]);
+    const chunk = this.chunks[this.currentIndex];
+    const utt = new SpeechSynthesisUtterance(chunk.text);
     utt.rate = config.rate;
     utt.pitch = config.pitch;
 
@@ -86,8 +120,15 @@ export class BrowserTTSPlayer implements ITTSPlayer {
     };
 
     utt.onend = () => {
+      if (!this._speaking || this._paused) return;
+      const pauseMs = Math.max(0, chunk.pauseAfterMs ?? 0);
       this.currentIndex++;
-      if (this._speaking && !this._paused) {
+      if (pauseMs > 0 && this.currentIndex < this.chunks.length) {
+        this.pauseTimer = setTimeout(() => {
+          this.pauseTimer = null;
+          if (this._speaking && !this._paused) this.speakChunk(config);
+        }, pauseMs);
+      } else {
         this.speakChunk(config);
       }
     };
@@ -120,6 +161,10 @@ export class BrowserTTSPlayer implements ITTSPlayer {
   stop() {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.cancel();
+    }
+    if (this.pauseTimer) {
+      clearTimeout(this.pauseTimer);
+      this.pauseTimer = null;
     }
     this.chunks = [];
     this.currentIndex = 0;
@@ -161,7 +206,7 @@ export class DashScopeTTSPlayer implements ITTSPlayer {
     return this._paused;
   }
 
-  async speak(text: string | string[], config: TTSConfig) {
+  async speak(text: TTSSpeakInput, config: TTSConfig) {
     this.abortController?.abort();
     this.abortController = null;
     if (this.checkEndTimer) {
@@ -175,7 +220,7 @@ export class DashScopeTTSPlayer implements ITTSPlayer {
     this.cleanupAudio();
     this.pendingBytes = [];
 
-    const chunks = Array.isArray(text) ? text.filter(Boolean) : splitIntoChunks(text);
+    const chunks = normalizeSpeakInput(text);
     const myRun = ++this.runId;
     this._playing = true;
     this._paused = false;
@@ -221,7 +266,15 @@ export class DashScopeTTSPlayer implements ITTSPlayer {
       this.currentStreamIndex = i;
       this.boundaryRecorded = false;
       try {
-        await this.streamChunk(chunks[i], config, i === 0, myRun);
+        await this.streamChunk(chunks[i].text, config, i === 0, myRun);
+        if (myRun !== this.runId) return;
+        // 把 chunk 自带的尾部停顿累加到时间轴，下一个 chunk 自动延后。
+        // 必须放在 flushPendingBytes 之后（streamChunk 末尾已 flush 过），
+        // 否则该 chunk 的实际音频起点不会被推后。
+        const pauseMs = Math.max(0, chunks[i].pauseAfterMs ?? 0);
+        if (pauseMs > 0 && this.audioCtx) {
+          this.scheduledEnd += pauseMs / 1000;
+        }
       } catch (err) {
         if (!this._playing || myRun !== this.runId || isTTSAbortError(err)) return;
         console.error("[DashScope TTS] chunk error:", err);
@@ -478,10 +531,10 @@ abstract class PCMStreamingTTSPlayer implements ITTSPlayer {
     onAudio: (bytes: Uint8Array) => void,
   ): Promise<void>;
 
-  async speak(text: string | string[], config: TTSConfig) {
+  async speak(text: TTSSpeakInput, config: TTSConfig) {
     this.stop();
 
-    const chunks = Array.isArray(text) ? text.filter(Boolean) : splitIntoChunks(text);
+    const chunks = normalizeSpeakInput(text);
     const myRun = ++this.runId;
     this._playing = true;
     this._paused = false;
@@ -530,7 +583,7 @@ abstract class PCMStreamingTTSPlayer implements ITTSPlayer {
       let firstAudioReceived = false;
       try {
         await this.streamChunkAudio(
-          chunks[i],
+          chunks[i].text,
           config,
           this.abortController.signal,
           (bytes) => {
@@ -551,6 +604,10 @@ abstract class PCMStreamingTTSPlayer implements ITTSPlayer {
       }
       if (myRun !== this.runId) return;
       this.flushPendingBytes();
+      const pauseMs = Math.max(0, chunks[i].pauseAfterMs ?? 0);
+      if (pauseMs > 0 && this.audioCtx) {
+        this.scheduledEnd += pauseMs / 1000;
+      }
     }
 
     if (myRun !== this.runId) return;
@@ -769,9 +826,9 @@ class BufferedAudioTTSPlayer implements ITTSPlayer {
     return this._paused;
   }
 
-  async speak(text: string | string[], config: TTSConfig) {
+  async speak(text: TTSSpeakInput, config: TTSConfig) {
     this.stop();
-    const chunks = Array.isArray(text) ? text.filter(Boolean) : splitIntoChunks(text);
+    const chunks = normalizeSpeakInput(text);
     const myRun = ++this.runId;
     this._playing = true;
     this._paused = false;
@@ -804,7 +861,7 @@ class BufferedAudioTTSPlayer implements ITTSPlayer {
       if (!this._playing || myRun !== this.runId) return;
       this.abortController = new AbortController();
       try {
-        const bytes = await this.fetchAudio(chunks[i], config);
+        const bytes = await this.fetchAudio(chunks[i].text, config);
         if (!this._playing || myRun !== this.runId || !this.audioCtx || !this.gainNode) return;
         const audioBuffer = await this.audioCtx.decodeAudioData(bytesToArrayBuffer(bytes));
         if (!this._playing || myRun !== this.runId || !this.audioCtx || !this.gainNode) return;
@@ -813,7 +870,7 @@ class BufferedAudioTTSPlayer implements ITTSPlayer {
         source.connect(this.gainNode);
         const startAt = Math.max(this.audioCtx.currentTime, this.scheduledEnd);
         source.start(startAt);
-        this.scheduledEnd = startAt + audioBuffer.duration;
+        this.scheduledEnd = startAt + audioBuffer.duration + (chunks[i].pauseAfterMs ?? 0) / 1000;
         this.hasAudioData = true;
         this.chunkBoundaries.push({ index: i, startAt });
         if (i === 0) this.onStateChange?.("playing");
@@ -930,7 +987,7 @@ export class OpenAICompatibleTTSPlayer implements ITTSPlayer {
     return this.activePlayer.paused;
   }
 
-  async speak(text: string | string[], config: TTSConfig) {
+  async speak(text: TTSSpeakInput, config: TTSConfig) {
     this.activePlayer =
       config.openaiTtsEndpoint === "chat-completions" && config.openaiTtsFormat === "pcm16"
         ? this.pcmPlayer
@@ -961,7 +1018,7 @@ export class EdgeTTSPlayer implements ITTSPlayer {
   private audioCtx: AudioContext | null = null;
   private gainNode: GainNode | null = null;
   private scheduledEnd = 0;
-  private chunks: string[] = [];
+  private chunks: TTSChunk[] = [];
   private _playing = false;
   private _paused = false;
   private hasAudioData = false;
@@ -997,7 +1054,7 @@ export class EdgeTTSPlayer implements ITTSPlayer {
     this.producerWake = null;
   }
 
-  async speak(text: string | string[], config: TTSConfig) {
+  async speak(text: TTSSpeakInput, config: TTSConfig) {
     // Invalidate any in-flight run immediately: its captured myRun no longer
     // equals this.runId, so every continuation/timer below bails on its guard.
     const myRun = ++this.runId;
@@ -1010,7 +1067,20 @@ export class EdgeTTSPlayer implements ITTSPlayer {
       this.checkEndTimer = null;
     }
 
-    this.chunks = Array.isArray(text) ? text.filter(Boolean) : splitIntoChunks(text, 800);
+    // Edge 用更大的字符预算（800）切块。字符串/字符串数组路径走大块切；
+    // TTSChunk[] 路径保留外部传入的 pauseAfterMs 元数据。
+    if (typeof text === "string") {
+      this.chunks = splitIntoChunks(text, 800).map((t) => ({ text: t }));
+    } else if (Array.isArray(text) && text.length > 0 && typeof text[0] === "string") {
+      this.chunks = (text as string[])
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .map((t) => ({ text: t }));
+    } else {
+      this.chunks = (text as TTSChunk[])
+        .map((c) => ({ text: c.text.trim(), pauseAfterMs: c.pauseAfterMs }))
+        .filter((c) => c.text);
+    }
     this._playing = true;
     this._paused = false;
     this.allChunksDone = false;
@@ -1062,7 +1132,7 @@ export class EdgeTTSPlayer implements ITTSPlayer {
     for (let p = 0; p < prewarmCount; p++) {
       if (this.fetchBuffer.has(p)) continue;
       if (!this._playing || myRun !== this.runId) return;
-      const promise = fetchEdgeTTSAudio({ text: this.chunks[p], ...base });
+      const promise = fetchEdgeTTSAudio({ text: this.chunks[p].text, ...base });
       promise.catch(() => {});
       this.fetchBuffer.set(p, promise);
       this.producerIndex = p + 1;
@@ -1110,7 +1180,7 @@ export class EdgeTTSPlayer implements ITTSPlayer {
       if (!this._playing || myRun !== this.runId) return;
 
       const idx = this.producerIndex++;
-      const promise = fetchEdgeTTSAudio({ text: this.chunks[idx], ...base });
+      const promise = fetchEdgeTTSAudio({ text: this.chunks[idx].text, ...base });
       promise.catch(() => {});
       this.fetchBuffer.set(idx, promise);
     }
@@ -1166,7 +1236,8 @@ export class EdgeTTSPlayer implements ITTSPlayer {
       this.chunkStartTimers.add(timer);
     }
     source.start(startAt);
-    this.scheduledEnd = startAt + audioBuffer.duration;
+    const pauseAfterMs = Math.max(0, this.chunks[index]?.pauseAfterMs ?? 0);
+    this.scheduledEnd = startAt + audioBuffer.duration + pauseAfterMs / 1000;
     this.hasAudioData = true;
 
     if (!this.playingNotified) {

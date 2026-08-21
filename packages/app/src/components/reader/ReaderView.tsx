@@ -29,8 +29,8 @@ import { useNotebookStore } from "@/stores/notebook-store";
 import { useReaderStore } from "@/stores/reader-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useTTSStore } from "@/stores/tts-store";
-import { getPlatformService } from "@listenmate/core/services";
 import { isPdfAnchor, pdfAnchorPage } from "@listenmate/core/pdf/highlight-anchor";
+import { getPlatformService } from "@listenmate/core/services";
 import { getCSSFontFace, useFontStore, useReadingSessionStore } from "@listenmate/core/stores";
 import { useRubyStore } from "@listenmate/core/stores/ruby-store";
 import { splitNarrationText } from "@listenmate/core/tts";
@@ -411,6 +411,8 @@ interface ReaderViewProps {
 type TTSSegment = {
   text: string;
   cfi: string | null;
+  /** 标题等结构性 segment 的尾部停顿（毫秒），透传给 TTS Player 在 chunk 之间插入静音。 */
+  pauseAfterMs?: number;
 };
 
 export function ReaderView({ bookId, tabId }: ReaderViewProps) {
@@ -1976,6 +1978,7 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
             (await foliateRef.current?.getVisibleTTSSegments())?.map((segment) => ({
               text: segment.text.trim(),
               cfi: segment.cfi,
+              pauseAfterMs: segment.pauseAfterMs,
             })) ?? [];
           const normalizedSegments = segments.filter((segment) => segment.text.length > 0);
           if (!normalizedSegments.length) {
@@ -2010,7 +2013,12 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
           void primeDesktopTTSLyricContext(lastVisibleCfi);
 
           if (autoResume) {
-            ttsPlay(normalizedSegments.map((segment) => segment.text));
+            ttsPlay(
+              normalizedSegments.map((segment) => ({
+                text: segment.text,
+                pauseAfterMs: segment.pauseAfterMs,
+              })),
+            );
           }
         })();
       };
@@ -2069,7 +2077,13 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
     void (async () => {
       if (!ttsContinuousRef.current) return;
       const restartFromCfi = startPageTTSFromCfiRef.current;
-      const context = await foliateRef.current?.getTTSSegmentContext(previousLastCfi || "", 0, 20);
+      const previousLastText = previousSegments[previousSegments.length - 1]?.text || "";
+      const context = await foliateRef.current?.getTTSSegmentContext(
+        previousLastCfi || "",
+        0,
+        20,
+        previousLastText,
+      );
       const nextSegment =
         (context?.after || []).find((segment) => segment.text.trim().length > 0) || null;
       console.log("[ReaderView][TTS] continue from context", {
@@ -2079,6 +2093,7 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
         nextCfi: nextSegment?.cfi || null,
         nextTextLength: nextSegment?.text?.length || 0,
         afterCount: context?.after?.length || 0,
+        aligned: !!nextSegment,
       });
 
       if (nextSegment?.cfi && restartFromCfi) {
@@ -2202,6 +2217,7 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
         (await foliateRef.current?.getVisibleTTSSegments())?.map((segment) => ({
           text: segment.text.trim(),
           cfi: segment.cfi,
+          pauseAfterMs: segment.pauseAfterMs,
         })) ?? [];
       const normalizedSegments = segments.filter((segment) => segment.text.length > 0);
       const normalized = normalizedSegments
@@ -2235,7 +2251,10 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
       );
       ttsPlay(
         normalizedSegments.length > 0
-          ? normalizedSegments.map((segment) => segment.text)
+          ? normalizedSegments.map((segment) => ({
+              text: segment.text,
+              pauseAfterMs: segment.pauseAfterMs,
+            }))
           : normalized,
       );
     },
@@ -2257,43 +2276,84 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
   const startPageTTSFromCfi = useCallback(
     async (targetCfi: string, targetText?: string) => {
       if (!targetCfi) return;
-      pendingTTSContinueCallbackRef.current = null;
       if (pendingTTSContinueSafetyTimerRef.current) {
         clearTimeout(pendingTTSContinueSafetyTimerRef.current);
         pendingTTSContinueSafetyTimerRef.current = null;
       }
+
+      // 翻页后启动新页播放的核心逻辑。抽出来供 relocate 回调和安全定时器复用。
+      // 之前用固定 280ms 等待翻页完成，但 EPUB/PDF 渲染时间不定，经常拿不到
+      // 完整的新页 segments，导致 ttsPlay 启动后立即结束（看起来像"不会自动播放"）。
+      // 改用 relocate 回调触发：renderer 真正完成新页渲染后才启动 ttsPlay。
+      const runContinue = async () => {
+        const segments =
+          (await foliateRef.current?.getVisibleTTSSegments(targetCfi))?.map((segment) => ({
+            text: segment.text.trim(),
+            cfi: segment.cfi,
+            pauseAfterMs: segment.pauseAfterMs,
+          })) ?? [];
+        const visibleSegments = segments.filter((segment) => segment.text.length > 0);
+        const playbackSegments: TTSSegment[] = visibleSegments.length
+          ? visibleSegments
+          : [{ text: (targetText || "").trim(), cfi: targetCfi }].filter(
+              (segment) => segment.text.length > 0,
+            );
+        if (!playbackSegments.length) {
+          console.log("[ReaderView][TTS] startPageTTSFromCfi no segments", {
+            targetCfi,
+            visibleCount: visibleSegments.length,
+            hasFallbackText: !!targetText,
+          });
+          return;
+        }
+        const context = await foliateRef.current?.getTTSSegmentContext(targetCfi, 10, 10);
+        const previous = filterDistinctTTSSegments(context?.before || [], playbackSegments);
+        const future = filterDistinctTTSSegments(context?.after || [], previous, playbackSegments);
+        const nextText = playbackSegments
+          .map((segment) => segment.text)
+          .join(" ")
+          .trim();
+        setTtsSegments(playbackSegments);
+        setTtsPrevPageSegments(previous);
+        setTtsFutureSegments(future);
+        setTtsLastText(nextText);
+        ttsSegmentsRef.current = playbackSegments;
+        ttsLastTextRef.current = nextText;
+        ttsFutureSegmentsRef.current = future;
+        ttsSetCurrentLocation(playbackSegments[0]?.cfi || targetCfi);
+        ttsContinuousRef.current = ttsSourceKind === "page" && ttsContinuousEnabled;
+        ttsSetOnEnd(ttsContinuousRef.current ? handleTTSPageEnd : null);
+        console.log("[ReaderView][TTS] startPageTTSFromCfi resume", {
+          targetCfi,
+          segmentCount: playbackSegments.length,
+          continuous: ttsContinuousRef.current,
+        });
+        ttsPlay(
+          playbackSegments.map((segment) => ({
+            text: segment.text,
+            pauseAfterMs: segment.pauseAfterMs,
+          })),
+        );
+      };
+
+      pendingTTSContinueCallbackRef.current = () => {
+        pendingTTSContinueCallbackRef.current = null;
+        if (pendingTTSContinueSafetyTimerRef.current) {
+          clearTimeout(pendingTTSContinueSafetyTimerRef.current);
+          pendingTTSContinueSafetyTimerRef.current = null;
+        }
+        void runContinue();
+      };
+
+      // 兜底：如果 relocate 事件没在 1500ms 内触发（例如 cfi 已在当前页，
+      // renderer 不会发 relocate），就主动启动，避免一直卡住不播放。
+      pendingTTSContinueSafetyTimerRef.current = setTimeout(() => {
+        const cb = pendingTTSContinueCallbackRef.current;
+        pendingTTSContinueCallbackRef.current = null;
+        if (cb) void cb();
+      }, 1500);
+
       goToCFISafely(targetCfi);
-      await new Promise((resolve) => setTimeout(resolve, 280));
-      const segments =
-        (await foliateRef.current?.getVisibleTTSSegments(targetCfi))?.map((segment) => ({
-          text: segment.text.trim(),
-          cfi: segment.cfi,
-        })) ?? [];
-      const visibleSegments = segments.filter((segment) => segment.text.length > 0);
-      const playbackSegments = visibleSegments.length
-        ? visibleSegments
-        : [{ text: (targetText || "").trim(), cfi: targetCfi }].filter(
-            (segment) => segment.text.length > 0,
-          );
-      if (!playbackSegments.length) return;
-      const context = await foliateRef.current?.getTTSSegmentContext(targetCfi, 10, 10);
-      const previous = filterDistinctTTSSegments(context?.before || [], playbackSegments);
-      const future = filterDistinctTTSSegments(context?.after || [], previous, playbackSegments);
-      const nextText = playbackSegments
-        .map((segment) => segment.text)
-        .join(" ")
-        .trim();
-      setTtsSegments(playbackSegments);
-      setTtsPrevPageSegments(previous);
-      setTtsFutureSegments(future);
-      setTtsLastText(nextText);
-      ttsSegmentsRef.current = playbackSegments;
-      ttsLastTextRef.current = nextText;
-      ttsFutureSegmentsRef.current = future;
-      ttsSetCurrentLocation(playbackSegments[0]?.cfi || targetCfi);
-      ttsContinuousRef.current = ttsSourceKind === "page" && ttsContinuousEnabled;
-      ttsSetOnEnd(ttsContinuousRef.current ? handleTTSPageEnd : null);
-      ttsPlay(playbackSegments.map((segment) => segment.text));
     },
     [
       filterDistinctTTSSegments,
@@ -2472,7 +2532,16 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
           goToCFISafely(nextCfi);
           foliateRef.current?.highlightCFITemporarily(nextCfi, 1200);
         }
-        setTimeout(() => ttsPlay(allSegments.map((segment) => segment.text)), 0);
+        setTimeout(
+          () =>
+            ttsPlay(
+              allSegments.map((segment) => ({
+                text: segment.text,
+                pauseAfterMs: segment.pauseAfterMs,
+              })),
+            ),
+          0,
+        );
         return;
       }
 
@@ -2495,7 +2564,16 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
         goToCFISafely(nextCfi);
         foliateRef.current?.highlightCFITemporarily(nextCfi, 1200);
       }
-      setTimeout(() => ttsPlay(sliced.map((segment) => segment.text)), 0);
+      setTimeout(
+        () =>
+          ttsPlay(
+            sliced.map((segment) => ({
+              text: segment.text,
+              pauseAfterMs: segment.pauseAfterMs,
+            })),
+          ),
+        0,
+      );
     },
     [ttsPrevPageSegments, ttsSegments, ttsSetCurrentLocation, ttsPlay, goToCFISafely],
   );
@@ -2538,7 +2616,12 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
           ttsSetCurrentLocation(nextCfi);
           goToCFISafely(nextCfi);
         }
-        ttsPlay(allSegments.map((s) => s.text));
+        ttsPlay(
+          allSegments.map((s) => ({
+            text: s.text,
+            pauseAfterMs: s.pauseAfterMs,
+          })),
+        );
         return;
       }
 
@@ -2565,7 +2648,12 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
           ttsSetCurrentLocation(nextCfi);
           goToCFISafely(nextCfi);
         }
-        ttsPlay(remainingFuture.map((s) => s.text));
+        ttsPlay(
+          remainingFuture.map((s) => ({
+            text: s.text,
+            pauseAfterMs: s.pauseAfterMs,
+          })),
+        );
         void primeDesktopTTSLyricContext(
           remainingFuture[remainingFuture.length - 1]?.cfi || remainingFuture[0]?.cfi || nextCfi,
         );
