@@ -1,0 +1,9 @@
+[Desktop Entry]
+Categories={{categories}}
+Comment={{comment}}
+Exec=/opt/listenMate/listenMate
+Icon=listenMate
+StartupWMClass=listenMate
+Name={{name}}
+Terminal=false
+Type=Application
