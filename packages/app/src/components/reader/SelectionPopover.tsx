@@ -14,7 +14,6 @@ interface SelectionPopoverProps {
   annotated?: boolean; // true if this is an existing annotation
   currentColor?: HighlightColor; // current highlight color (for existing annotations)
   defaultColor?: HighlightColor;
-  isPdf?: boolean; // true if viewing a PDF (highlight disabled)
   onHighlight: (color: HighlightColor) => void;
   onRemoveHighlight: () => void;
   onNote: () => void;
@@ -31,7 +30,6 @@ export function SelectionPopover({
   annotated = false,
   currentColor,
   defaultColor = "yellow",
-  isPdf = false,
   onHighlight,
   onRemoveHighlight,
   onNote,
@@ -40,16 +38,13 @@ export function SelectionPopover({
   onClose,
 }: SelectionPopoverProps) {
   const { t } = useTranslation();
-  const [showColors, setShowColors] = useState(!isPdf);
+  const [showColors, setShowColors] = useState(!annotated);
   const [selectedColor, setSelectedColor] = useState<HighlightColor>(currentColor || defaultColor);
   const overlayRef = useRef<HTMLDivElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
   const [clampedPosition, setClampedPosition] = useState(position);
 
   const handleHighlightClick = () => {
-    // PDF doesn't support highlighting
-    if (isPdf) return;
-
     if (annotated) {
       setShowColors(!showColors);
       return;
@@ -70,12 +65,11 @@ export function SelectionPopover({
   const buttons = [
     {
       icon: Highlighter,
-      label: isPdf ? t("reader.highlightNotSupportedPdf") : t("reader.highlight"),
+      label: t("reader.highlight"),
       onClick: handleHighlightClick,
       isHighlight: true,
-      disabled: isPdf,
     },
-    { icon: NotebookPen, label: t("reader.note"), onClick: onNote, disabled: isPdf },
+    { icon: NotebookPen, label: t("reader.note"), onClick: onNote },
     { icon: Copy, label: t("common.copy"), onClick: onCopy },
     { icon: Headphones, label: t("tts.speakSelection"), onClick: onSpeak },
     ...(annotated
@@ -130,7 +124,7 @@ export function SelectionPopover({
         style={{ left: clampedPosition.x, top: clampedPosition.y }}
       >
         {/* Color picker row */}
-        {showColors && !isPdf && (
+        {showColors && (
           <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1.5 shadow-lg">
             {HIGHLIGHT_COLORS.map((color) => (
               <button
@@ -157,16 +151,13 @@ export function SelectionPopover({
               type="button"
               key={btn.label}
               className={cn(
-                "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
-                btn.disabled ? "cursor-not-allowed opacity-40" : "hover:bg-muted",
-                btn.isHighlight && showColors && !isPdf && "bg-muted",
+                "flex h-8 w-8 items-center justify-center rounded-md transition-colors hover:bg-muted",
+                btn.isHighlight && showColors && "bg-muted",
                 btn.isDestructive &&
-                  !btn.disabled &&
                   "text-muted-foreground hover:bg-destructive/10 hover:text-destructive",
               )}
               title={btn.label}
-              onClick={btn.disabled ? undefined : btn.onClick}
-              disabled={btn.disabled}
+              onClick={btn.onClick}
             >
               <btn.icon className="h-4 w-4" />
             </button>

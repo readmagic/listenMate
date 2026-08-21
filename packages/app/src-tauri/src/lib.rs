@@ -40,7 +40,7 @@ pub fn run() {
             }
 
             let show_item = MenuItem::with_id(app, "tray_show", "显示主窗口", true, None::<&str>)?;
-            let quit_item = MenuItem::with_id(app, "tray_quit", "退出 listenMate", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "tray_quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
 
             TrayIconBuilder::with_id("main-tray")

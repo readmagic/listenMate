@@ -148,6 +148,10 @@ export class FixedLayout extends HTMLElement {
     iframe.setAttribute("sandbox", "allow-same-origin allow-scripts");
     iframe.setAttribute("scrolling", "no");
     iframe.setAttribute("part", "filter");
+    // Stash section index on the iframe so getContents() can report it.
+    // Required by app-level PDF selection/highlight pipelines which key
+    // off `content.index` to serialize anchors and route redraws.
+    if (typeof index === "number") iframe.dataset.index = String(index);
     this.#root.append(element);
     if (!src) return { blank: true, element, iframe };
     return new Promise((resolve) => {
@@ -349,10 +353,13 @@ export class FixedLayout extends HTMLElement {
     if (!s) return this.goToSpread(this.#index - 1, this.rtl ? "left" : "right", "page");
   }
   getContents() {
-    return Array.from(this.#root.querySelectorAll("iframe"), (frame) => ({
-      doc: frame.contentDocument,
-      // TODO: index, overlayer
-    }));
+    return Array.from(this.#root.querySelectorAll("iframe"), (frame) => {
+      const indexAttr = frame.dataset.index;
+      return {
+        doc: frame.contentDocument,
+        index: indexAttr !== undefined ? Number(indexAttr) : undefined,
+      };
+    });
   }
   destroy() {
     this.#observer.unobserve(this);

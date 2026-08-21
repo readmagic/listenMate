@@ -213,7 +213,7 @@ const getSelectedText = (selection, container) => {
  * Render canvas + text layer + annotation layer for a PDF page inside an iframe document.
  * Called on initial load and on every zoom change.
  */
-const render = async (page, doc, zoom) => {
+const render = async (page, doc, zoom, book, index) => {
   if (!doc) return;
   const scale = zoom;
   const outputScale = globalThis.devicePixelRatio || 1;
@@ -481,12 +481,16 @@ const render = async (page, doc, zoom) => {
       // Annotation rendering may fail for some pages
     }
   }
+
+  // Notify listener that text + annotation layers are ready (used by app to
+  // redraw PDF highlight overlays after zoom-triggered re-render).
+  book?.onRendered?.(doc, index, viewport);
 };
 
 /**
  * Render a single PDF page and return src/onZoom for the fixed-layout renderer.
  */
-const renderPage = async (page) => {
+const renderPage = async (page, index, book) => {
   const viewport = page.getViewport({ scale: 1 });
 
   const data = `<!DOCTYPE html>
@@ -517,7 +521,7 @@ ${ANNOTATION_LAYER_CSS}
 </html>`;
 
   const src = URL.createObjectURL(new Blob([data], { type: "text/html" }));
-  const onZoom = ({ doc, scale }) => render(page, doc, scale);
+  const onZoom = ({ doc, scale }) => render(page, doc, scale, book, index);
   return { src, data, onZoom };
 };
 
@@ -733,7 +737,7 @@ async function _buildPDFBook(pdf, fileName) {
     load: async () => {
       const cached = cache.get(i);
       if (cached) return cached;
-      const result = await renderPage(await pdf.getPage(i + 1));
+      const result = await renderPage(await pdf.getPage(i + 1), i, book);
       cache.set(i, result);
       return result;
     },

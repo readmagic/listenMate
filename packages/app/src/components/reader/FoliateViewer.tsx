@@ -7,7 +7,10 @@ import type { BookDoc, BookFormat } from "@/lib/reader/document-loader";
 import { getDirection, isFixedLayoutBook } from "@/lib/reader/document-loader";
 import { getFontTheme } from "@/lib/reader/font-themes";
 import { registerIframeEventHandlers } from "@/lib/reader/iframe-event-handlers";
+import { deserializePdfAnchor, pdfAnchorPage, serializePdfAnchor } from "@listenmate/core/pdf/highlight-anchor";
 import { cleanText, isTTSFootnoteMarker, shouldSkipTTSNode } from "@listenmate/core/tts";
+import type { HighlightColor } from "@listenmate/core/types";
+import { HIGHLIGHT_COLOR_HEX } from "@listenmate/core/types";
 import type { ViewSettings } from "@listenmate/core/types";
 import { Overlayer } from "foliate-js/overlayer.js";
 import { marked } from "marked";
@@ -661,6 +664,9 @@ export interface FoliateViewerHandle {
   injectRuby: (mode: "zh-pinyin" | "zh-zhuyin" | "ja") => Promise<void>;
   /** Remove all ruby annotations from current document */
   removeRuby: () => Promise<void>;
+  /** Redraw PDF highlight overlays on the textLayer of all currently rendered
+   * pages. No-op for EPUB (it uses the Overlayer pipeline instead). */
+  redrawPdfHighlights: (highlights: { id: string; cfi: string; color: HighlightColor }[]) => void;
 }
 
 interface FoliateViewerProps {
@@ -676,6 +682,8 @@ interface FoliateViewerProps {
   onError?: (error: Error) => void;
   onSelection?: (selection: BookSelection | null) => void;
   onShowAnnotation?: (cfi: string, range: Range, index: number) => void;
+  /** Invoked when the user clicks an existing PDF highlight rect. */
+  onShowPdfHighlight?: (highlightId: string) => void;
   onToggleSearch?: () => void;
   onToggleToc?: () => void;
   onToggleChat?: () => void;
@@ -712,6 +720,7 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
       onError,
       onSelection,
       onShowAnnotation,
+      onShowPdfHighlight,
       onToggleSearch,
       onToggleToc,
       onToggleChat,
@@ -791,6 +800,10 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
     );
 
     const isFixedLayout = isFixedLayoutBook(format, bookDoc);
+    // Mirror isFixedLayout into a ref so stable callbacks (useCallback([])) read
+    // the current value instead of the captured first-render value.
+    const isFixedLayoutRef = useRef(isFixedLayout);
+    isFixedLayoutRef.current = isFixedLayout;
     // Track when view is ready so hooks/events re-bind
     const [viewReady, setViewReady] = useState(false);
 
@@ -1509,6 +1522,91 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
       [ensureDesktopTTS],
     );
 
+    // --- PDF highlight overlays ---
+    // onShowPdfHighlight mirrors the prop so the imperative redraw callback can
+    // read the latest handler without rebuilding. lastPdfHighlightsRef caches the
+    // most recent highlight set so the pdf.js onRendered hook (fires after every
+    // zoom-triggered textLayer re-render) can re-apply overlays.
+    const onShowPdfHighlightRef = useRef(onShowPdfHighlight);
+    onShowPdfHighlightRef.current = onShowPdfHighlight;
+    const lastPdfHighlightsRef = useRef<{ id: string; cfi: string; color: HighlightColor }[]>([]);
+
+    const redrawPdfHighlights = useCallback(
+      (highlights: { id: string; cfi: string; color: HighlightColor }[]) => {
+        lastPdfHighlightsRef.current = highlights;
+        const view = viewRef.current;
+        if (!view) {
+          console.log("[PDF redraw] no view");
+          return;
+        }
+        const contents = getRendererContents(view);
+        console.log("[PDF redraw] start", {
+          highlightCount: highlights.length,
+          contentCount: contents.length,
+          contentIndexes: contents.map((c) => c.index),
+        });
+        for (const content of contents) {
+          const doc = content?.doc;
+          const pageIndex = content?.index;
+          if (!doc || typeof pageIndex !== "number") {
+            console.log("[PDF redraw] skip content", { hasDoc: !!doc, pageIndex });
+            continue;
+          }
+          const textLayer = doc.querySelector(".textLayer");
+          // Duck-type: cross-realm instanceof HTMLElement would fail for iframe
+          // elements created in the PDF iframe's own realm.
+          if (!textLayer || textLayer.nodeType !== 1) {
+            console.log("[PDF redraw] no textLayer for page", pageIndex);
+            continue;
+          }
+          const textLayerEl = textLayer as HTMLElement;
+
+          // Clear previous overlays (zoom-triggered re-render also wipes them
+          // via textContainer.replaceChildren(), but this branch also runs when
+          // highlights are added/removed without a re-render).
+          for (const el of textLayerEl.querySelectorAll(":scope > .pdf-highlight")) {
+            el.remove();
+          }
+
+          const pageHighlights = highlights.filter((h) => pdfAnchorPage(h.cfi) === pageIndex);
+          console.log("[PDF redraw] page", pageIndex, "matches", pageHighlights.length);
+          for (const h of pageHighlights) {
+            const anchor = deserializePdfAnchor(h.cfi);
+            if (!anchor) {
+              console.warn("[PDF redraw] failed to deserialize anchor", h.id, h.cfi);
+              continue;
+            }
+            const color = HIGHLIGHT_COLOR_HEX[h.color] ?? HIGHLIGHT_COLOR_HEX.yellow;
+            for (const rect of anchor.rects) {
+              const div = doc.createElement("div");
+              div.className = "pdf-highlight";
+              div.dataset.highlightId = h.id;
+              Object.assign(div.style, {
+                position: "absolute",
+                left: `${rect.l * 100}%`,
+                top: `${rect.t * 100}%`,
+                width: `${(rect.r - rect.l) * 100}%`,
+                height: `${(rect.b - rect.t) * 100}%`,
+                backgroundColor: color,
+                opacity: "0.35",
+                pointerEvents: "auto",
+                cursor: "pointer",
+                mixBlendMode: "multiply",
+                zIndex: "1",
+              } satisfies Partial<CSSStyleDeclaration>);
+              div.addEventListener("click", (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                onShowPdfHighlightRef.current?.(h.id);
+              });
+              textLayerEl.appendChild(div);
+            }
+          }
+        }
+      },
+      [],
+    );
+
     // --- Imperative handle for parent ---
     useImperativeHandle(
       ref,
@@ -1762,8 +1860,9 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             console.warn("[removeRuby] Error:", err);
           }
         },
+        redrawPdfHighlights,
       }),
-      [viewReady],
+      [viewReady, redrawPdfHighlights],
     );
 
     // --- Hooks ---
@@ -2149,6 +2248,12 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
         // biome-ignore lint: runtime flag on Document
         (doc as any).__listenmate_selection_registered = true;
 
+        console.log("[PDF sel] attachSelectionListener registered for doc", {
+          hasTextLayer: !!doc.querySelector(".textLayer"),
+          location: doc.location?.href,
+          isFixedLayoutRef: isFixedLayoutRef.current,
+        });
+
         let originalScrollLeft = 0;
         let pageDebounceTimer: ReturnType<typeof setTimeout> | null = null;
         let pendingAdvanceDirection: "next" | "prev" | null = null;
@@ -2336,6 +2441,9 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             rendererScrolled: !!renderer?.scrolled,
             xFraction,
             clickMetrics,
+            hasTextLayer: !!doc.querySelector(".textLayer"),
+            hadSelectionOnPointerDown: hadSelectionOnPointerDown.current,
+            annotationClicked: annotationClickedRef.current,
           });
 
           setTimeout(() => {
@@ -2514,26 +2622,76 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
             return !!(sel && !sel.isCollapsed && sel.toString().trim().length > 0);
           }) ??
           null;
-        if (!selectedContent?.doc) return null;
+        if (!selectedContent?.doc) {
+          console.log("[PDF sel] no selectedContent", {
+            hadTargetDoc: !!targetDoc,
+            contentCount: contents.length,
+            contentIndexes: contents.map((c) => c.index),
+            contentHasSelection: contents.map((c) => {
+              const s = c.doc?.getSelection?.();
+              return !!(s && !s.isCollapsed && s.toString().trim().length > 0);
+            }),
+          });
+          return null;
+        }
 
         const doc = selectedContent.doc;
         const sel = doc.getSelection();
         const range = getSelectionRange(sel);
-        if (!range) return null;
+        if (!range) {
+          console.log("[PDF sel] no range");
+          return null;
+        }
         const text = getRangeTextWithoutRuby(range, sel?.toString() || "");
-        if (!text) return null;
+        if (!text) {
+          console.log("[PDF sel] no text");
+          return null;
+        }
 
         // Get CFI for the selection
         let cfi: string | undefined;
         let chapterIndex: number | undefined;
         try {
           const index = selectedContent.index;
+          console.log("[PDF sel] entering cfi branch", {
+            index,
+            indexType: typeof index,
+            isFixedLayoutRef: isFixedLayoutRef.current,
+            hasTextLayer: !!doc.querySelector(".textLayer"),
+          });
           if (typeof index === "number") {
-            cfi = view.getCFI(index, range);
+            if (isFixedLayoutRef.current) {
+              // PDF / fixed-layout: serialize selection rects to a stable anchor
+              // JSON (normalized 0~1 against the textLayer container) and store it
+              // in the cfi field. The textLayer and Range share the same viewport
+              // coordinate system inside the iframe, so normalization is zoom-stable.
+              // NOTE: do NOT use `instanceof HTMLElement` here — textLayer is
+              // created by the iframe's own realm, so the main-window HTMLElement
+              // check fails (cross-realm instanceof). Duck-type instead.
+              const textLayer = doc.querySelector(".textLayer");
+              if (textLayer && textLayer.nodeType === 1) {
+                const containerRect = (textLayer as HTMLElement).getBoundingClientRect();
+                cfi = serializePdfAnchor(index, range, containerRect);
+                console.log("[PDF sel] anchor generated", {
+                  index,
+                  cfi,
+                  containerRect: { w: containerRect.width, h: containerRect.height },
+                  rectCount: range.getClientRects().length,
+                });
+              } else {
+                console.warn("[PDF sel] no .textLayer found in doc");
+              }
+            } else {
+              cfi = view.getCFI(index, range);
+              console.log("[PDF sel] EPUB branch cfi", { cfi });
+            }
             chapterIndex = index;
+          } else {
+            console.warn("[PDF sel] selectedContent.index is not a number", { index });
           }
-        } catch {
-          // CFI generation may fail for some selections
+        } catch (err) {
+          console.error("[PDF sel] anchor generation failed", err);
+          // CFI/anchor generation may fail for some selections
         }
 
         const rects = Array.from(range.getClientRects());
@@ -2629,6 +2787,18 @@ export const FoliateViewer = forwardRef<FoliateViewerHandle, FoliateViewerProps>
           await view.open(bookDoc);
           viewRef.current = view;
 
+          // Wire pdf.js onRendered hook: fires after every textLayer render
+          // (initial mount + every zoom change). We re-apply PDF highlight
+          // overlays because textContainer.replaceChildren() wiped them.
+          if (isFixedLayout && view.book) {
+            (view.book as { onRendered?: (doc: Document, index: number, viewport: unknown) => void }).onRendered = (_doc, index, viewport) => {
+              console.log("[PDF onRendered] fired", { index, hasViewport: !!viewport });
+              redrawPdfHighlights(lastPdfHighlightsRef.current);
+            };
+            console.log("[FoliateViewer] PDF onRendered hook mounted on view.book");
+          } else {
+            console.warn("[FoliateViewer] PDF onRendered NOT mounted", { isFixedLayout, hasBook: !!view.book });
+          }
           // Set search indicator color (use primary theme color instead of red)
           const primaryColor =
             getComputedStyle(document.documentElement).getPropertyValue("--primary")?.trim() ||

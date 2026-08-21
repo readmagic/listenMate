@@ -30,6 +30,7 @@ import { useReaderStore } from "@/stores/reader-store";
 import { useSettingsStore } from "@/stores/settings-store";
 import { useTTSStore } from "@/stores/tts-store";
 import { getPlatformService } from "@listenmate/core/services";
+import { isPdfAnchor, pdfAnchorPage } from "@listenmate/core/pdf/highlight-anchor";
 import { getCSSFontFace, useFontStore, useReadingSessionStore } from "@listenmate/core/stores";
 import { useRubyStore } from "@listenmate/core/stores/ruby-store";
 import { splitNarrationText } from "@listenmate/core/tts";
@@ -617,6 +618,17 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
         progressTrackingGuardUntilRef.current,
         Date.now() + PROGRAMMATIC_NAV_GUARD_MS,
       );
+
+      // PDF anchor: cfi is a JSON string with page (0-indexed section index).
+      // foliate-js's goToCFI only understands EPUB CFI, so route via goToIndex.
+      if (isPdfAnchor(cfi)) {
+        const page = pdfAnchorPage(cfi);
+        if (page !== null) {
+          foliateRef.current.goToIndex(page);
+        }
+        return;
+      }
+
       foliateRef.current.goToCFI(cfi);
     },
     [tabId, readerTab, pushHistory],
@@ -697,59 +709,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
 
     return () => clearTimeout(timer);
   }, [foliateReady, appTab, navigateToReaderLocation]);
-
-  // Sync highlights to FoliateViewer when they change or when foliate becomes ready
-  // Use a timeout to ensure the foliate view is fully initialized
-  useEffect(() => {
-    if (!foliateReady) return;
-
-    // Delay to ensure foliate view is fully ready
-    const timer = setTimeout(() => {
-      if (!foliateRef.current) return;
-
-      // Filter highlights for this book
-      const bookHighlights = highlights.filter((h) => h.bookId === bookId);
-      const currentIds = new Set(bookHighlights.map((h) => h.id));
-
-      // Remove highlights that are no longer in the store
-      for (const [id, data] of renderedHighlightsRef.current) {
-        if (!currentIds.has(id)) {
-          foliateRef.current.deleteAnnotation({ value: data.cfi });
-          renderedHighlightsRef.current.delete(id);
-        }
-      }
-
-      // Add new highlights or update existing ones if note status or color changed
-      for (const h of bookHighlights) {
-        if (!h.cfi) continue;
-
-        const existing = renderedHighlightsRef.current.get(h.id);
-        const hasNote = !!h.note;
-        const color = h.color || "yellow";
-
-        // Check if we need to re-render (new highlight, note status changed, or color changed)
-        const needsRender = !existing || existing.hasNote !== hasNote || existing.color !== color;
-
-        if (needsRender) {
-          // Remove old annotation if exists
-          if (existing) {
-            foliateRef.current.deleteAnnotation({ value: existing.cfi });
-          }
-
-          // Add new/updated annotation
-          foliateRef.current.addAnnotation({
-            value: h.cfi,
-            type: "highlight",
-            color,
-            note: h.note, // Pass note for wavy underline + tooltip
-          });
-          renderedHighlightsRef.current.set(h.id, { cfi: h.cfi, hasNote, color });
-        }
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [highlights, foliateReady, bookId]);
 
   // Book document state
   const [bookDoc, setBookDoc] = useState<BookDoc | null>(null);
@@ -1509,8 +1468,132 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
   );
 
   // --- Selection actions ---
+  // PDF/fixed-layout bypass the foliate-js Overlayer pipeline (it is not
+  // mounted for FixedLayout) and redraw highlight overlays directly on the
+  // textLayer. Read fresh from the store so add/remove reflect immediately.
+  const refreshPdfHighlights = useCallback(() => {
+    if (!isFixedLayout) return;
+    const list = useAnnotationStore
+      .getState()
+      .highlights.filter((h) => h.bookId === bookId)
+      .map((h) => ({
+        id: h.id,
+        cfi: h.cfi,
+        color: (h.color ?? "yellow") as HighlightColor,
+      }));
+    console.log("[refreshPdfHighlights] calling redraw", {
+      count: list.length,
+      cfis: list.map((l) => l.cfi),
+    });
+    foliateRef.current?.redrawPdfHighlights(list);
+  }, [bookId, isFixedLayout]);
+
+  // Sync highlights to FoliateViewer when they change or when foliate becomes ready
+  // Use a timeout to ensure the foliate view is fully initialized
+  useEffect(() => {
+    if (!foliateReady) return;
+
+    const timer = setTimeout(() => {
+      if (!foliateRef.current) return;
+
+      const bookHighlights = highlights.filter((h) => h.bookId === bookId);
+
+      // PDF / fixed-layout: bypass Overlayer, redraw overlays directly.
+      if (isFixedLayout) {
+        refreshPdfHighlights();
+        renderedHighlightsRef.current = new Map(
+          bookHighlights.map((h) => [
+            h.id,
+            { cfi: h.cfi, hasNote: !!h.note, color: h.color || "yellow" },
+          ]),
+        );
+        return;
+      }
+
+      const currentIds = new Set(bookHighlights.map((h) => h.id));
+
+      for (const [id, data] of renderedHighlightsRef.current) {
+        if (!currentIds.has(id)) {
+          foliateRef.current.deleteAnnotation({ value: data.cfi });
+          renderedHighlightsRef.current.delete(id);
+        }
+      }
+
+      for (const h of bookHighlights) {
+        if (!h.cfi) continue;
+
+        const existing = renderedHighlightsRef.current.get(h.id);
+        const hasNote = !!h.note;
+        const color = h.color || "yellow";
+        const needsRender = !existing || existing.hasNote !== hasNote || existing.color !== color;
+
+        if (needsRender) {
+          if (existing) {
+            foliateRef.current.deleteAnnotation({ value: existing.cfi });
+          }
+          foliateRef.current.addAnnotation({
+            value: h.cfi,
+            type: "highlight",
+            color,
+            note: h.note,
+          });
+          renderedHighlightsRef.current.set(h.id, { cfi: h.cfi, hasNote, color });
+        }
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [highlights, foliateReady, bookId, isFixedLayout, refreshPdfHighlights]);
+
+  // Click on an existing PDF highlight rect → synthesize a BookSelection and
+  // reuse the EPUB popover flow (handleSelection computes position + shows
+  // SelectionPopover with delete/edit actions).
+  const handleShowPdfHighlight = useCallback(
+    (highlightId: string) => {
+      const highlight = highlights.find((h) => h.id === highlightId && h.bookId === bookId);
+      if (!highlight) return;
+
+      const view = foliateRef.current?.getView?.();
+      const contents = (view?.renderer?.getContents?.() ?? []) as Array<{
+        doc?: Document;
+        index?: number;
+      }>;
+      let rect: DOMRect | null = null;
+      let pageIndex: number | undefined;
+      for (const content of contents) {
+        const doc = content.doc;
+        if (!doc) continue;
+        const div = doc.querySelector(`[data-highlight-id="${CSS.escape(highlightId)}"]`);
+        if (div instanceof HTMLElement) {
+          rect = div.getBoundingClientRect();
+          pageIndex = content.index;
+          break;
+        }
+      }
+      if (!rect || pageIndex === undefined) return;
+
+      handleSelection({
+        text: highlight.text,
+        cfi: highlight.cfi,
+        chapterIndex: pageIndex,
+        rects: [rect],
+        annotated: true,
+        highlightId: highlight.id,
+        color: highlight.color,
+      });
+    },
+    [highlights, bookId, handleSelection],
+  );
+
   const handleHighlight = useCallback(
     (color: HighlightColor = viewSettings.defaultHighlightColor ?? "yellow") => {
+      console.log("[handleHighlight] called", {
+        hasSelection: !!selection,
+        hasCfi: !!selection?.cfi,
+        cfi: selection?.cfi,
+        isFixedLayout,
+        highlightId: selection?.highlightId,
+      });
       if (selection && selection.cfi) {
         updateReadSettings({ defaultHighlightColor: color });
         const existingHighlight = selection.highlightId
@@ -1522,13 +1605,17 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
             color,
             updatedAt: Date.now(),
           });
-          foliateRef.current?.deleteAnnotation({ value: existingHighlight.cfi });
-          foliateRef.current?.addAnnotation({
-            value: existingHighlight.cfi,
-            type: "highlight",
-            color,
-            note: existingHighlight.note,
-          });
+          if (isFixedLayout) {
+            refreshPdfHighlights();
+          } else {
+            foliateRef.current?.deleteAnnotation({ value: existingHighlight.cfi });
+            foliateRef.current?.addAnnotation({
+              value: existingHighlight.cfi,
+              type: "highlight",
+              color,
+              note: existingHighlight.note,
+            });
+          }
           setSelection(null);
           return;
         }
@@ -1548,11 +1635,15 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
         });
 
         // Immediately render on page (don't wait for useEffect)
-        foliateRef.current?.addAnnotation({
-          value: selection.cfi,
-          type: "highlight",
-          color,
-        });
+        if (isFixedLayout) {
+          refreshPdfHighlights();
+        } else {
+          foliateRef.current?.addAnnotation({
+            value: selection.cfi,
+            type: "highlight",
+            color,
+          });
+        }
 
         // Track as rendered
         renderedHighlightsRef.current.set(highlightId, {
@@ -1570,11 +1661,18 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
       highlights,
       updateReadSettings,
       viewSettings.defaultHighlightColor,
+      isFixedLayout,
+      refreshPdfHighlights,
     ],
   );
 
   // Handle note button - open notebook panel with pending note
   const handleNote = useCallback(() => {
+    console.log("[handleNote] called", {
+      hasSelection: !!selection,
+      hasCfi: !!selection?.cfi,
+      cfi: selection?.cfi,
+    });
     if (selection && selection.cfi) {
       // Check if this selection is already highlighted
       const existingHighlight = highlights.find(
@@ -1608,13 +1706,17 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
       useAnnotationStore.getState().removeHighlight(selection.highlightId);
 
       // Remove from view
-      foliateRef.current?.deleteAnnotation({ value: selection.cfi });
+      if (isFixedLayout) {
+        refreshPdfHighlights();
+      } else {
+        foliateRef.current?.deleteAnnotation({ value: selection.cfi });
+      }
 
       // Remove from rendered tracking
       renderedHighlightsRef.current.delete(selection.highlightId);
     }
     setSelection(null);
-  }, [selection]);
+  }, [selection, isFixedLayout, refreshPdfHighlights]);
 
   // Handle show-annotation event (user clicked on existing highlight)
   const handleShowAnnotation = useCallback(
@@ -2769,6 +2871,7 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
                 onError={handleError}
                 onSelection={handleSelection}
                 onShowAnnotation={handleShowAnnotation}
+                onShowPdfHighlight={handleShowPdfHighlight}
                 onToggleSearch={handleToggleSearch}
                 onToggleToc={handleToggleToc}
               />
@@ -2847,7 +2950,6 @@ export function ReaderView({ bookId, tabId }: ReaderViewProps) {
                 annotated={selection.annotated}
                 currentColor={selection.color as HighlightColor | undefined}
                 defaultColor={viewSettings.defaultHighlightColor ?? "yellow"}
-                isPdf={bookFormat === "PDF"}
                 onHighlight={handleHighlight}
                 onRemoveHighlight={handleRemoveHighlight}
                 onNote={handleNote}

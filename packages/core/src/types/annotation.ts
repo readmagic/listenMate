@@ -20,7 +20,7 @@ export const HIGHLIGHT_COLORS: HighlightColor[] = ["yellow", "green", "blue", "p
 export interface Highlight {
   id: string;
   bookId: string;
-  cfi: string; // EPUB CFI range
+  cfi: string; // EPUB CFI range or PDF anchor JSON ({"pdf":true,"p":N,"rects":[...]})
   text: string;
   color: HighlightColor;
   note?: string;

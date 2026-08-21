@@ -339,7 +339,7 @@ export function HomePage() {
   const handleBatchDelete = useCallback(async () => {
     if (selectedBookIds.size === 0) return;
     if (
-      !confirm(t("library.batchDeleteConfirm", `确定要删除选中的 ${selectedBookIds.size} 本书吗？`))
+      !confirm(t("library.batchDeleteConfirm", { count: selectedBookIds.size }))
     )
       return;
     for (const id of selectedBookIds) {
